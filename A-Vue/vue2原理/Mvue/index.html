@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Vue双向绑定原理及实现</title>
+	<style>
+		#app {
+			margin: 20px auto;
+			width: 800px;
+			padding: 200px;
+			text-align: center;
+			border: 2px solid #ccc;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app">
+		<input class="form-control" v-model="name" type="text">
+		<h1>{{name}}</h1>
+	</div>
+
+	<script src="./js/index.js"></script>
+	<script src="./js/observer.js"></script>
+	<script src="./js/compile.js"></script>
+	<script src="./js/watcher.js"></script>
+	<script>
+		// 参考：https://juejin.cn/post/6844903605414133773
+		const vm = new Mvue({
+			el: "#app",
+			data: {
+				name: "数据绑定test"
+			}
+		});
+	</script>
+</body>
+
+</html>
