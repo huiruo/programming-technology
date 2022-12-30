@@ -44,10 +44,12 @@
       },
 
       setup(props) {
+        console.log('start响应式=>代码中setup:调用reactive', 'color:chartreuse')
         const refData = ref({
           myName: 'Ruo'
         })
 
+        console.log('start响应式=>代码中setup:调用reactive', 'color:chartreuse')
         const info = reactive({
           msg2: 'hello',
         });

@@ -12,12 +12,23 @@ a8--createVNode创建vnode-->b1("function _createVNode")-->b2("return createBase
 b2-->b3("createBaseVNode(type, props,...")
 
 %% render
-a9--创建或者更新节点-->b4("patch(container._vnode,vnode,container,...")--处理dom元素为例-->b5("processElement(n1, n2, container,...")
+a9--创建或者更新节点-->b4("patch(container._vnode,vnode,container,...")
 
-
+%% 调用patch处理组件元素为例
+b4--处理dom元素为例-->b5("processElement(n1, n2, container,...")
 b5--创建-->b6("mountElement(n2, container, anchor")
-b5--创建-->b7("patchElement(n1, n2, parentComponent)")
+b5--更新-->b7("patchElement(n1, n2, parentComponent)")
+```
 
+调用patch处理组件元素为例
+```mermaid
+flowchart TD
+%% 调用patch处理组件元素为例
+A1("patch(container._vnode,vnode,container,...")-->A2("processComponent(n1, n2, container")
+
+
+A2--创建-->b6("mountComponent(n2, container, anchor")
+A2--更新-->b7("updateComponent(n1, n2,optimized)")
 ```
 
 ## 第一步
@@ -263,7 +274,7 @@ render函数可以说是vue重点中的重点，因为vue的patch算法便是在
 
 从源码可以看出，当新旧虚拟节点不同，会先卸载旧节点。
 
-### B-1. 我们的重点是弄清Vue的关键算法patch。
+### B-1. 我们的重点是弄清Vue的关键算法patch
 在patch函数中，vNode存在八种不同的类型，会根据vNode的类型去做对应的处理，挂载DOM，或者更新DOM。
 
 patch 的过程中主要完成以下几件事情：

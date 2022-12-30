@@ -910,6 +910,7 @@ var Vue = (function (exports) {
         // Convert returned value into a proxy as well. we do the isObject check
         // here to avoid invalid value warning. Also need to lazy access readonly
         // and reactive here to avoid circular dependency.
+        console.log('%c响应式=>b:调用reactive', 'color:chartreuse')
         return isReadonly ? readonly(res) : reactive(res);
       }
       return res;
@@ -1318,9 +1319,12 @@ var Vue = (function (exports) {
   }
   function reactive(target) {
     // if trying to observe a readonly proxy, return the readonly version.
+    // 如果试图去观察一个只读的代理对象，会直接返回只读版本
     if (isReadonly(target)) {
       return target;
     }
+    console.log('%c响应式=>1:reactive->createReactiveObject创建一个代理对象并返回', 'color:chartreuse')
+    // 创建一个代理对象并返回
     return createReactiveObject(target, false, mutableHandlers, mutableCollectionHandlers, reactiveMap);
   }
   /**
@@ -1329,6 +1333,7 @@ var Vue = (function (exports) {
    * root level).
    */
   function shallowReactive(target) {
+    console.log('%c响应式=>1:shallowReactive->createReactiveObject创建一个代理对象并返回', 'color:chartreuse')
     return createReactiveObject(target, false, shallowReactiveHandlers, shallowCollectionHandlers, shallowReactiveMap);
   }
   /**
@@ -1336,6 +1341,7 @@ var Vue = (function (exports) {
    * made reactive, but `readonly` can be called on an already reactive object.
    */
   function readonly(target) {
+    console.log('%c响应式=>1:readonly->createReactiveObject创建一个代理对象并返回', 'color:chartreuse')
     return createReactiveObject(target, true, readonlyHandlers, readonlyCollectionHandlers, readonlyMap);
   }
   /**
@@ -1345,9 +1351,12 @@ var Vue = (function (exports) {
    * This is used for creating the props proxy object for stateful components.
    */
   function shallowReadonly(target) {
+    console.log('%c响应式=>1:shallowReadonly->createReactiveObject创建一个代理对象并返回', 'color:chartreuse')
     return createReactiveObject(target, true, shallowReadonlyHandlers, shallowReadonlyCollectionHandlers, shallowReadonlyMap);
   }
   function createReactiveObject(target, isReadonly, baseHandlers, collectionHandlers, proxyMap) {
+    console.log('响应式=>参数', target, isReadonly, baseHandlers)
+    // 如果目标不是对象，直接返回原始值
     if (!isObject(target)) {
       {
         console.warn(`value cannot be made reactive: ${String(target)}`);
@@ -1356,20 +1365,26 @@ var Vue = (function (exports) {
     }
     // target is already a Proxy, return it.
     // exception: calling readonly() on a reactive object
+    // 如果目标已经是一个代理，直接返回
+    // 除非对一个响应式对象执行 readonly
     if (target["__v_raw" /* ReactiveFlags.RAW */] &&
       !(isReadonly && target["__v_isReactive" /* ReactiveFlags.IS_REACTIVE */])) {
       return target;
     }
     // target already has corresponding Proxy
+    // 目标已经存在对应的代理对象
     const existingProxy = proxyMap.get(target);
     if (existingProxy) {
       return existingProxy;
     }
     // only specific value types can be observed.
+    // 只有白名单里的类型才能被创建响应式对象
     const targetType = getTargetType(target);
     if (targetType === 0 /* TargetType.INVALID */) {
       return target;
     }
+
+    console.log('%c响应式=>2:createReactiveObject:new Proxy(target', 'color:chartreuse')
     const proxy = new Proxy(target, targetType === 2 /* TargetType.COLLECTION */ ? collectionHandlers : baseHandlers);
     proxyMap.set(target, proxy);
     return proxy;
@@ -1397,6 +1412,7 @@ var Vue = (function (exports) {
     def(value, "__v_skip" /* ReactiveFlags.SKIP */, true);
     return value;
   }
+  console.log('%c响应式=>c:调用reactive', 'color:chartreuse')
   const toReactive = (value) => isObject(value) ? reactive(value) : value;
   const toReadonly = (value) => isObject(value) ? readonly(value) : value;
 
@@ -3056,6 +3072,7 @@ var Vue = (function (exports) {
             {
               pushWarningContext(vnode);
             }
+            console.log('test:handleSetupResult 2')
             handleSetupResult(instance, asyncSetupResult, false);
             if (hydratedEl) {
               // vnode may have been replaced if an update happened before the
@@ -4957,6 +4974,7 @@ var Vue = (function (exports) {
         warn$1(`data() should return an object.`);
       }
       else {
+        console.log('start响应式=>a:applyOptions-调用reactive')
         instance.data = reactive(data);
         {
           for (const key in data) {
@@ -7070,6 +7088,7 @@ var Vue = (function (exports) {
         }
 
         console.log(`%c组件挂载：mountComponent:2调用setupComponent设置组件实例:`, 'color:magenta')
+        console.log('test:定义在data的响应式start==>mountComponent调用setupComponent')
         setupComponent(instance);
         {
           endMeasure(instance, `init`);
@@ -8763,6 +8782,7 @@ var Vue = (function (exports) {
     const isStateful = isStatefulComponent(instance);
     initProps(instance, props, isStateful, isSSR);
     initSlots(instance, children);
+    console.log('test:setupComponent调用setupStatefulComponent')
     const setupResult = isStateful
       ? setupStatefulComponent(instance, isSSR)
       : undefined;
@@ -8818,6 +8838,7 @@ var Vue = (function (exports) {
           // return the promise so server-renderer can wait on it
           return setupResult
             .then((resolvedResult) => {
+              console.log('test:handleSetupResult 3')
               handleSetupResult(instance, resolvedResult, isSSR);
             })
             .catch(e => {
@@ -8838,10 +8859,12 @@ var Vue = (function (exports) {
         }
       }
       else {
+        console.log('test:setupStatefulComponent调用handleSetupResult 1')
         handleSetupResult(instance, setupResult, isSSR);
       }
     }
     else {
+      console.log('%c响应式=>setupStatefulComponent调用finishComponentSetup', 'color:chartreuse')
       finishComponentSetup(instance, isSSR);
     }
   }
@@ -8870,6 +8893,7 @@ var Vue = (function (exports) {
     else if (setupResult !== undefined) {
       warn$1(`setup() should return an object. Received: ${setupResult === null ? 'null' : typeof setupResult}`);
     }
+    console.log('%ctest:响应式=>handleSetupResult调用finishComponentSetup', 'color:chartreuse')
     finishComponentSetup(instance, isSSR);
   }
   let compile;
@@ -8923,6 +8947,8 @@ var Vue = (function (exports) {
         installWithProxy(instance);
       }
     }
+
+    console.log('%ctest:响应式=>finishComponentSetup调用applyOptions', 'color:chartreuse')
     // support for 2.x options
     {
       setCurrentInstance(instance);

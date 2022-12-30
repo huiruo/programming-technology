@@ -502,7 +502,7 @@ JS_RETURN_STATEMENT
 }
 ```
 
-### 回归parseElement
+### 回到parseElement
 在 while 的循环内，各个分支判断分支内，我们能看到 node 会接收各种节点类型的解析函数的返回值。而这里我会详细的说一下 parseElement 这个解析元素的函数，因为这是我们在模板中用的最频繁的场景。
 
 该解析函数笼统来看分为简单的三步，解析开始标签 -> 递归解析子节点 -> 解析结束标签。
@@ -565,7 +565,21 @@ function parseElement(context, ancestors) {
 
 
 
-## 进入整个解析的重点parseTag:parseTag()用来解析开始标签、自闭合标签与结束标签，不过我们只关注其开始标签的部分。
+## 进入整个解析的重点parseTag:parseTag()用来解析开始标签、自闭合标签与结束标签
+
+不过我们只关注其开始标签的部分。
+
+首先我们会获取当前节点的父节点，然后调用 parseTag 函数解析。
+
+parseTag 函数会按的执行大体是以下流程：
+1. 首先匹配标签名。
+2. 解析元素中的 attribute 属性，存储至 props 属性
+3. 检测是否存在 v-pre 指令，若是存在的话，则修改 context 上下文中的 inVPre 属性为 true
+4. 检测自闭合标签，如果是自闭合，则将 isSelfClosing 属性置为 true
+5. 判断 tagType，是 ELEMENT 元素还是 COMPONENT 组件，或者 SLOT 插槽
+6. 返回生成的 element 对象
+
+
 ```javaScript
 function parseTag(context, type, parent) {
 console.log('探究初始化==>我们的重点在这,parseTag()用来解析开始标签、自闭合标签与结束标签')
@@ -774,6 +788,26 @@ return {
 ```
 
 ## 至此，编译篇的解析部分，已全部讲解完毕。
+模板元素解析例子：
+```html
+<div>
+  <p>Hello World</p>
+</div>
+```
+![](./img/模板元素解析例子.png)
+
+图片中是解析过程中，保存解析后节点的栈的存储情况,
+
+图中的黄色矩形是一个栈，当开始解析时，parseChildren 首先会遇到 div 标签，开始调用的 parseElement 函数。通过 parseTag 函数解析出了 div 元素，并将它压入栈中，递归解析子节点。第二次调用 parseChildren 函数，遇见 p 元素，调用 parseElement 函数，将 p 标签压入栈中，此时栈中有 div 和 p 两个标签。再次解析 p 中的子节点，第三次调用 parseChildren 标签，这次不会匹配到任何标签，不会生成对应的 node，所以会通过 parseText 函数去生成文本，解析出 node 为 HelloWorld，并返回 node。
+
+将这个文本类型的 node 添加进 p 标签的 children 属性后，此时 p 标签的子节点解析完毕，弹出祖先栈，完成结束标签的解析后，返回 p 标签对应的 element 对象。
+
+p 标签对应的 node 节点生成，并在 parseChildren 函数中返回对应 node。
+
+div 标签在接收到 p 标签的 node 后，添加进自身的 children 属性中，出栈。此时祖先栈中就空空如也了。而 div 的标签完成闭合解析的逻辑后，返回 element 元素。
+
+最终 parseChildren 的第一次调用返回结果，生成了 div 对应的 node 对象，也返回了结果，将这个结果作为 createRoot 函数的 children 参数传入，生成根节点对象，完成 ast 解析。
+
 `相信大家还没有忘记，我们进行这么复杂的解析的目的是为了获得一棵关于源码的AST树。`
 
 `接下来是的阶段是，我们曾在讲解AST时，提及过的变换，变换AST的结构，使它在不失去原本的语义的情况下，对源码进行优化。`
