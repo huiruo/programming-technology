@@ -18,10 +18,10 @@
   <div id="root">
     <div>
       <button v-on:click='onClickText' class="btn">Hello world,Click me</button>
-      <span>{{refData.myName}}-{{msg}}-{{info.msg2}}</span>
-      <div v-if="showDiv">
+      <span>ruo-{{msg}}</span>
+      <!-- <div v-if="showDiv">
         被你发现了
-      </div>
+      </div> -->
     </div>
   </div>
   <script>
@@ -31,25 +31,19 @@
       data() {
         return {
           msg: '改变我',
-          showDiv: false
+          // showDiv: false
         }
       },
       methods: {
         onClickText() {
-          console.log('test:', this, '-', this.refData)
           this.msg = '努力'
-          this.showDiv = !this.showDiv
-          this.info.msg2 = this.showDiv ? '直接点' : '其他选择'
+          // this.showDiv = !this.showDiv
+          // this.info.msg2 = this.showDiv ? '直接点' : '其他选择'
         }
       },
 
       setup(props) {
-        console.log('start响应式=>代码中setup:调用reactive', 'color:chartreuse')
-        const refData = ref({
-          myName: 'Ruo'
-        })
-
-        console.log('start响应式=>代码中setup:调用reactive', 'color:chartreuse')
+        console.log('start响应式=>setup()', 'color:chartreuse')
         const info = reactive({
           msg2: 'hello',
         });
@@ -71,8 +65,8 @@
           console.log('this-ins:', ins, 'this:', this)
 
           // 注意数据b和a的使用方法
-          console.log('msg:', ins.data.msg)
-          console.log('info:', info.msg2)
+          // console.log('msg:', ins.data.msg)
+          // console.log('info:', info.msg2)
         });
 
         Vue.onBeforeUpdate(() => {
@@ -92,8 +86,7 @@
         })
 
         return {
-          info,
-          refData
+          info
         };
       },
 

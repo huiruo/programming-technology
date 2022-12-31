@@ -586,17 +586,25 @@ var Vue = (function (exports) {
   const MAP_KEY_ITERATE_KEY = Symbol('Map key iterate');
   class ReactiveEffect {
     constructor(fn, scheduler = null, scope) {
+      console.log('依赖收集==>ReactiveEffect constructor')
+      // 传入一个副作用函数
       this.fn = fn;
       this.scheduler = scheduler;
+      // 是否活跃
       this.active = true;
+      // dep 数组，在响应式对象收集依赖时也会将对应的依赖项添加到这个数组中
       this.deps = [];
+      // 上一个 ReactiveEffect 的实例
       this.parent = undefined;
+      // 标记作用域
       recordEffectScope(this, scope);
     }
     run() {
+      // 如果当前effect已经被stop
       if (!this.active) {
         return this.fn();
       }
+      // 如果当前活跃的effect就是这个effect本身，则直接返回
       let parent = activeEffect;
       let lastShouldTrack = shouldTrack;
       while (parent) {
@@ -605,24 +613,38 @@ var Vue = (function (exports) {
         }
         parent = parent.parent;
       }
+      // 依次活跃的effect形成链表，由parent属性连接
       try {
+        // 保存上一个 activeEffect
         this.parent = activeEffect;
         activeEffect = this;
         shouldTrack = true;
+        // trackOpBit: 根据深度生成 trackOpBit
         trackOpBit = 1 << ++effectTrackDepth;
+        // 如果不超过最大嵌套深度，使用优化方案
         if (effectTrackDepth <= maxMarkerBits) {
+          // 标记所有的 dep 为 was
+          // 遍历 this.deps 将其中的effect设置为已捕获 tracked
           initDepMarkers(this);
         }
         else {
+          // 层级溢出则清除当前副作用
           cleanupEffect(this);
         }
+        // 执行过程中重新收集依赖标记新的 dep 为 new
+        console.log('依赖收集==>b,run方法内部为了触发一下依赖收集')
         return this.fn();
       }
+
+      // 因为前面有return，因此当 try 的代码块发生异常时执行
       finally {
         if (effectTrackDepth <= maxMarkerBits) {
+          // 优化方案：删除失效的依赖
           finalizeDepMarkers(this);
         }
+        // 嵌套深度自 + 重置操作的位数
         trackOpBit = 1 << --effectTrackDepth;
+        // 恢复上一个 activeEffect
         activeEffect = this.parent;
         shouldTrack = lastShouldTrack;
         this.parent = undefined;
@@ -631,6 +653,7 @@ var Vue = (function (exports) {
         }
       }
     }
+    // 清除副作用
     stop() {
       // stopped while running itself - defer the cleanup
       if (activeEffect === this) {
@@ -646,6 +669,7 @@ var Vue = (function (exports) {
     }
   }
   function cleanupEffect(effect) {
+    console.log('cleanupEffect用于清除副作用。接收一个effect，遍历effect.deps，并逐个删除副作用effect。随后清空effect.deps')
     const { deps } = effect;
     if (deps.length) {
       for (let i = 0; i < deps.length; i++) {
@@ -655,20 +679,25 @@ var Vue = (function (exports) {
     }
   }
   function effect(fn, options) {
+    // 如果 fn 已经是一个副作用函数，则返回副作用的原始函数
     if (fn.effect) {
       fn = fn.effect.fn;
     }
+    // 创建一个副作用
+    console.log('依赖收集==>4调用ReactiveEffect')
     const _effect = new ReactiveEffect(fn);
     if (options) {
       extend(_effect, options);
       if (options.scope)
         recordEffectScope(_effect, options.scope);
     }
+    // 如果不是延迟执行的，则立即执行一次副作用函数
     if (!options || !options.lazy) {
       _effect.run();
     }
     const runner = _effect.run.bind(_effect);
     runner.effect = _effect;
+    // 返回生成的副作用函数
     return runner;
   }
   function stop(runner) {
@@ -696,10 +725,12 @@ var Vue = (function (exports) {
       }
       const eventInfo = { effect: activeEffect, target, type, key }
         ;
+      console.log('%c触发收集:1,track调用trackEffects', 'color:chartreuse', 'dep:', dep)
       trackEffects(dep, eventInfo);
     }
   }
   function trackEffects(dep, debuggerEventExtraInfo) {
+    console.log('%c触发收集:trackEffects把当前活跃的activeEffect加入dep，以及在activeEffect.deps中加入该副作用影响到的所有依赖', 'color:chartreuse')
     let shouldTrack = false;
     if (effectTrackDepth <= maxMarkerBits) {
       if (!newTracked(dep)) {
@@ -773,8 +804,7 @@ var Vue = (function (exports) {
           break;
       }
     }
-    const eventInfo = { target, type, key, newValue, oldValue, oldTarget }
-      ;
+    const eventInfo = { target, type, key, newValue, oldValue, oldTarget };
     if (deps.length === 1) {
       if (deps[0]) {
         {
@@ -795,15 +825,18 @@ var Vue = (function (exports) {
     }
   }
   function triggerEffects(dep, debuggerEventExtraInfo) {
+    console.log('%c触发更新:1,triggerEffects接收一个dep和用于调试的额外信息。遍历dep中的effect，逐一使用triggerEffect来执行副作用', 'color:chartreuse', 'dep:', dep)
     // spread into array for stabilization
     const effects = isArray(dep) ? dep : [...dep];
     for (const effect of effects) {
       if (effect.computed) {
+        console.log('%c触发更新:a,triggerEffects', 'color:chartreuse', 'effect:', effect)
         triggerEffect(effect, debuggerEventExtraInfo);
       }
     }
     for (const effect of effects) {
       if (!effect.computed) {
+        console.log('%c触发更新:b,triggerEffects', 'color:chartreuse', 'effect:', effect)
         triggerEffect(effect, debuggerEventExtraInfo);
       }
     }
@@ -813,10 +846,13 @@ var Vue = (function (exports) {
       if (effect.onTrigger) {
         effect.onTrigger(extend({ effect }, debuggerEventExtraInfo));
       }
+      // 实际触发更新的地方
       if (effect.scheduler) {
+        console.log('%c触发更新:1,triggerEffect调用effect.scheduler', 'color:chartreuse')
         effect.scheduler();
       }
       else {
+        console.log('%c触发更新:2,triggerEffect调用effect.run', 'color:chartreuse')
         effect.run();
       }
     }
@@ -867,16 +903,21 @@ var Vue = (function (exports) {
     return instrumentations;
   }
   function createGetter(isReadonly = false, shallow = false) {
+    console.log(`%c响应式陷阱触发==>:createGetter`, 'color:red')
     return function get(target, key, receiver) {
+      console.log(`%c响应式触发==>1:get`, 'color:red', target, 'key:', key)
+      // 如果 get 访问的 key 是 '__v_isReactive'，返回 createGetter 的 isReadonly 参数取反结果
       if (key === "__v_isReactive" /* ReactiveFlags.IS_REACTIVE */) {
         return !isReadonly;
       }
+      // 如果 get 访问的 key 是 '__v_isReadonly'，返回 createGetter 的 isReadonly 参数
       else if (key === "__v_isReadonly" /* ReactiveFlags.IS_READONLY */) {
         return isReadonly;
       }
       else if (key === "__v_isShallow" /* ReactiveFlags.IS_SHALLOW */) {
         return shallow;
       }
+      // 如果 get 访问的 key 是 '__v_raw'，并且 receiver 与原始标识相等，则返回原始值
       else if (key === "__v_raw" /* ReactiveFlags.RAW */ &&
         receiver ===
         (isReadonly
@@ -888,43 +929,62 @@ var Vue = (function (exports) {
             : reactiveMap).get(target)) {
         return target;
       }
+
+      // 判断 taeget 是否是数组
       const targetIsArray = isArray(target);
+      // 如果不是只读对象，并且目标对象是个数组，访问的 key 又在数组需要劫持的方法里，直接调用修改后的数组方法执行
       if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, key)) {
         return Reflect.get(arrayInstrumentations, key, receiver);
       }
+
+      // 获取 Reflect 执行的 get 默认结果
       const res = Reflect.get(target, key, receiver);
+      // 如果是 key 是 Symbol，并且 key 是 Symbol 对象中的 Symbol 类型的 key
+      // 或者 key 是不需要追踪的 key: __proto__,__v_isRef,__isVue
+      // 直接返回 get 结果
       if (isSymbol(key) ? builtInSymbols.has(key) : isNonTrackableKeys(key)) {
         return res;
       }
+      // 不是只读对象，执行 track 收集依赖
       if (!isReadonly) {
+        console.log(`%c响应式触发==>2:get,target不是只读对象，track收集依赖`, 'color:red', target, 'key:', key)
         track(target, "get" /* TrackOpTypes.GET */, key);
       }
+      // 如果是 shallow 浅层响应式，直接返回 get 结果
       if (shallow) {
         return res;
       }
+      // 如果是 ref ，则返回解包后的值 - 当 target 是数组，key 是 int 类型时，不需要解包
       if (isRef(res)) {
         // ref unwrapping - skip unwrap for Array + integer key.
         return targetIsArray && isIntegerKey(key) ? res : res.value;
       }
       if (isObject(res)) {
+        // 将返回的值也转换成代理，我们在这里做 isObject 的检查以避免无效值警告。
+        // 也需要在这里惰性访问只读和星影视对象，以避免循环依赖。
         // Convert returned value into a proxy as well. we do the isObject check
         // here to avoid invalid value warning. Also need to lazy access readonly
         // and reactive here to avoid circular dependency.
         console.log('%c响应式=>b:调用reactive', 'color:chartreuse')
         return isReadonly ? readonly(res) : reactive(res);
       }
+      // 不是 object 类型则直接返回 get 结果
       return res;
     };
   }
   const set = /*#__PURE__*/ createSetter();
   const shallowSet = /*#__PURE__*/ createSetter(true);
   function createSetter(shallow = false) {
+    console.log(`%c响应式陷阱触发==>:createSetter`, 'color:red')
     return function set(target, key, value, receiver) {
+      console.log(`%c响应式触发==>1:set`, 'color:red', target, 'value:', value)
       let oldValue = target[key];
       if (isReadonly(oldValue) && isRef(oldValue) && !isRef(value)) {
         return false;
       }
       if (!shallow) {
+        // 当不是 shallow 模式时，判断旧值是否是 Ref，如果是则直接更新旧值的 value
+        // 因为 ref 有自己的 setter
         if (!isShallow(value) && !isReadonly(value)) {
           oldValue = toRaw(oldValue);
           value = toRaw(value);
@@ -934,16 +994,21 @@ var Vue = (function (exports) {
           return true;
         }
       }
+      // 判断 target 中是否存在 key
       const hadKey = isArray(target) && isIntegerKey(key)
         ? Number(key) < target.length
         : hasOwn(target, key);
+      // Reflect.set 获取默认行为的返回值
       const result = Reflect.set(target, key, value, receiver);
       // don't trigger if target is something up in the prototype chain of original
+      // 如果目标是原始对象原型链上的属性，则不会触发 trigger 派发更新
       if (target === toRaw(receiver)) {
+        // 使用 trigger 派发更新，根据 hadKey 区别调用事件
         if (!hadKey) {
           trigger(target, "add" /* TriggerOpTypes.ADD */, key, value);
         }
         else if (hasChanged(value, oldValue)) {
+          console.log(`%c响应式触发==>2:set触发依赖`, 'color:red', target, key, value, 'oldValue:', oldValue)
           trigger(target, "set" /* TriggerOpTypes.SET */, key, value, oldValue);
         }
       }
@@ -1323,8 +1388,8 @@ var Vue = (function (exports) {
     if (isReadonly(target)) {
       return target;
     }
-    console.log('%c响应式=>1:reactive->createReactiveObject创建一个代理对象并返回', 'color:chartreuse')
     // 创建一个代理对象并返回
+    console.log('%c响应式=>1:reactive->createReactiveObject创建一个代理对象并返回', 'color:chartreuse')
     return createReactiveObject(target, false, mutableHandlers, mutableCollectionHandlers, reactiveMap);
   }
   /**
@@ -1356,6 +1421,7 @@ var Vue = (function (exports) {
   }
   function createReactiveObject(target, isReadonly, baseHandlers, collectionHandlers, proxyMap) {
     console.log('响应式=>参数', target, isReadonly, baseHandlers)
+
     // 如果目标不是对象，直接返回原始值
     if (!isObject(target)) {
       {
@@ -1363,6 +1429,7 @@ var Vue = (function (exports) {
       }
       return target;
     }
+
     // target is already a Proxy, return it.
     // exception: calling readonly() on a reactive object
     // 如果目标已经是一个代理，直接返回
@@ -1384,7 +1451,7 @@ var Vue = (function (exports) {
       return target;
     }
 
-    console.log('%c响应式=>2:createReactiveObject:new Proxy(target', 'color:chartreuse')
+    console.log('%c响应式=>2:正式开始createReactiveObject执行new Proxy', 'color:chartreuse')
     const proxy = new Proxy(target, targetType === 2 /* TargetType.COLLECTION */ ? collectionHandlers : baseHandlers);
     proxyMap.set(target, proxy);
     return proxy;
@@ -1560,6 +1627,7 @@ var Vue = (function (exports) {
       this.__v_isRef = true;
       this[_a] = false;
       this._dirty = true;
+      console.log('依赖收集==>1调用ReactiveEffect')
       this.effect = new ReactiveEffect(getter, () => {
         if (!this._dirty) {
           this._dirty = true;
@@ -2491,7 +2559,9 @@ var Vue = (function (exports) {
         // withProxy is a proxy with a different `has` trap only for
         // runtime-compiled render functions using `with` block.
         const proxyToUse = withProxy || proxy;
+        console.log('test:render', { test: render })
         result = normalizeVNode(render.call(proxyToUse, proxyToUse, renderCache, props, setupState, data, ctx));
+        console.log('test:render', { test: result })
         fallthroughAttrs = attrs;
       }
       else {
@@ -3396,6 +3466,7 @@ var Vue = (function (exports) {
         job.id = instance.uid;
       scheduler = () => queueJob(job);
     }
+    console.log('依赖收集==>2调用ReactiveEffect')
     const effect = new ReactiveEffect(getter, scheduler);
     {
       effect.onTrack = onTrack;
@@ -5893,6 +5964,7 @@ var Vue = (function (exports) {
   }
   let uid = 0;
   function createAppAPI(render, hydrate) {
+    console.log('createAppAPI:', { test: render })
     return function createApp(rootComponent, rootProps = null) {
       /* rootProps必须是Object */
       if (!isFunction(rootComponent)) {
@@ -7106,7 +7178,7 @@ var Vue = (function (exports) {
         }
         return;
       }
-      console.log(`%c组件挂载：==end mountComponent:3调用setupRenderEffect设置并执行带副作用的渲染函数:`, 'color:magenta')
+      console.log(`%c组件挂载：==end mountComponent:3调用setupRenderEffect 执行带副作用的渲染函数setupRenderEffect:`, 'color:magenta')
       setupRenderEffect(instance, initialVNode, container, anchor, parentSuspense, isSVG, optimized);
       {
         popWarningContext();
@@ -7147,7 +7219,9 @@ var Vue = (function (exports) {
     };
     const setupRenderEffect = (instance, initialVNode, container, anchor, parentSuspense, isSVG, optimized) => {
       const componentUpdateFn = () => {
+        console.log('effect.run==>:调用componentUpdateFn组件的初始挂载和更新')
         if (!instance.isMounted) {
+          console.log('effect.run==>:componentUpdateFn之Mounte')
           let vnodeHook;
           const { el, props } = initialVNode;
           const { bm, m, parent } = instance;
@@ -7155,11 +7229,13 @@ var Vue = (function (exports) {
           toggleRecurse(instance, false);
           // beforeMount hook
           if (bm) {
+            console.log('effect.run==>:生命周期beforeMount')
             invokeArrayFns(bm);
           }
           // onVnodeBeforeMount
           if (!isAsyncWrapperVNode &&
             (vnodeHook = props && props.onVnodeBeforeMount)) {
+            console.log('effect.run==>:生命周期onVnodeBeforeMount')
             invokeVNodeHook(vnodeHook, parent, initialVNode);
           }
           toggleRecurse(instance, true);
@@ -7169,7 +7245,7 @@ var Vue = (function (exports) {
               {
                 startMeasure(instance, `render`);
               }
-              console.log("setupRenderEffect:组件实例生成子树vnode")
+              console.log("effect.run==>:setupRenderEffect:1组件实例生成子树vnode")
               instance.subTree = renderComponentRoot(instance);
               {
                 endMeasure(instance, `render`);
@@ -7198,6 +7274,7 @@ var Vue = (function (exports) {
             {
               startMeasure(instance, `render`);
             }
+            console.log('$ceffect.run==>执行renderComponentRoot，获取组件当前的 VNode,render会读取组件的响应式数据，这会触发依赖收集', 'color:chartreuse')
             const subTree = (instance.subTree = renderComponentRoot(instance));
             {
               endMeasure(instance, `render`);
@@ -7205,7 +7282,7 @@ var Vue = (function (exports) {
             {
               startMeasure(instance, `patch`);
             }
-            console.log("setupRenderEffect:把子树挂载到container上")
+            console.log("effect.run==>调用patch进行组件内容的渲染,把子树挂载到container上")
             patch(null, subTree, container, anchor, instance, parentSuspense, isSVG);
             {
               endMeasure(instance, `patch`);
@@ -7214,6 +7291,7 @@ var Vue = (function (exports) {
           }
           // mounted hook
           if (m) {
+            console.log('effect.run==>:生命周期mounted')
             queuePostRenderEffect(m, parentSuspense);
           }
           // onVnodeMounted
@@ -7231,6 +7309,7 @@ var Vue = (function (exports) {
               parent.vnode.shapeFlag & 256 /* ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE */)) {
             instance.a && queuePostRenderEffect(instance.a, parentSuspense);
           }
+          console.log("%ceffect.run==>将组件实例的 isMounted 属性设为 true，表明当前的组件已经完成了挂载操作", 'color:red')
           instance.isMounted = true;
           {
             devtoolsComponentAdded(instance);
@@ -7239,6 +7318,7 @@ var Vue = (function (exports) {
           initialVNode = container = anchor = null;
         }
         else {
+          console.log('effect.run==>:componentUpdateFn之updateComponent')
           // updateComponent
           // This is triggered by mutation of component's own state (next: null)
           // OR parent calling processComponent (next: VNode)
@@ -7259,6 +7339,7 @@ var Vue = (function (exports) {
           }
           // beforeUpdate hook
           if (bu) {
+            console.log('effect.run==>:生命周期beforeUpdate')
             invokeArrayFns(bu);
           }
           // onVnodeBeforeUpdate
@@ -7270,15 +7351,18 @@ var Vue = (function (exports) {
           {
             startMeasure(instance, `render`);
           }
+          console.log('$ceffect.run==>执行renderComponentRoot，获取组件最新的 VNode,render会读取组件的响应式数据，这会触发依赖收集', 'color:chartreuse')
           const nextTree = renderComponentRoot(instance);
           {
             endMeasure(instance, `render`);
           }
+          // 获取组件上次渲染的 VNode
           const prevTree = instance.subTree;
           instance.subTree = nextTree;
           {
             startMeasure(instance, `patch`);
           }
+          console.log('effect.run==>:componentUpdateFn之updateComponent调用patch 函数进行组件的更新')
           patch(prevTree, nextTree,
             // parent may have changed if it's in a teleport
             hostParentNode(prevTree.el),
@@ -7296,10 +7380,12 @@ var Vue = (function (exports) {
           }
           // updated hook
           if (u) {
+            console.log('effect.run==>:生命周期updated')
             queuePostRenderEffect(u, parentSuspense);
           }
           // onVnodeUpdated
           if ((vnodeHook = next.props && next.props.onVnodeUpdated)) {
+            console.log('effect.run==>:生命周期onVnodeUpdated')
             queuePostRenderEffect(() => invokeVNodeHook(vnodeHook, parent, next, vnode), parentSuspense);
           }
           {
@@ -7311,8 +7397,10 @@ var Vue = (function (exports) {
         }
       };
       // create reactive effect for rendering
+      console.log('依赖收集==>setupRenderEffect:3调用ReactiveEffect 创建一个副作用:', componentUpdateFn)
       const effect = (instance.effect = new ReactiveEffect(componentUpdateFn, () => queueJob(update), instance.scope // track it in component's effect scope
       ));
+      console.log('依赖收集==>a,关键：调用effect.run()为了触发一下依赖收集')
       const update = (instance.update = () => effect.run());
       update.id = instance.uid;
       // allowRecurse
@@ -8829,6 +8917,7 @@ var Vue = (function (exports) {
         setup.length > 1 ? createSetupContext(instance) : null);
       setCurrentInstance(instance);
       pauseTracking();
+      console.log('%c响应式=>setupStatefulComponent调用setup()返回setupResult', 'color:chartreuse', 'setup', setup)
       const setupResult = callWithErrorHandling(setup, instance, 0 /* ErrorCodes.SETUP_FUNCTION */, [shallowReadonly(instance.props), setupContext]);
       resetTracking();
       unsetCurrentInstance();
@@ -10100,7 +10189,7 @@ var Vue = (function (exports) {
       }
     }
     _update() {
-      console.log('%c_update调用render', 'yellow')
+      console.log('%c_update调用render', 'yellow', { test: render })
       render(this._createVNode(), this.shadowRoot);
     }
     _createVNode() {
@@ -16233,7 +16322,7 @@ var Vue = (function (exports) {
 
     console.log('探究初始化:compileToFunction==>：', template)
     const { code } = compile$1(template, opts);
-    console.log('%c探究初始化结束:compileToFunction==>调用compile$1 生成由AST生成的code：', "color:yellow", code)
+    console.log('%c探究初始化结束:compileToFunction==>调用compile$1 生成由AST生成的code：', "color:yellow", { test: code })
 
     function onError(err, asWarning = false) {
       const message = asWarning
@@ -16249,6 +16338,8 @@ var Vue = (function (exports) {
     // the wildcard object.
     const render = (new Function(code)());
     render._rc = true;
+    console.log('%c探究初始化结束:compileToFunction==>将 render code 转化为 function：', "color:yellow", { test: render })
+    console.log('%c探究初始化结束:compileToFunction==>将 render放入缓存：', "color:yellow")
     return (compileCache[key] = render);
   }
 

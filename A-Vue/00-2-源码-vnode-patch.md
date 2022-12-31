@@ -20,15 +20,49 @@ b5--创建-->b6("mountElement(n2, container, anchor")
 b5--更新-->b7("patchElement(n1, n2, parentComponent)")
 ```
 
-调用patch处理组件元素为例
+<br />
+
+## 调用patch处理组件元素
+* 在mountComponent走reactive流程
+```
+见: 
+00-3-vue3源码-响应式原理与reactive.md
+```
+* 在 componentUpdateFn 函数中，进行了组件的初始挂载和更新，生命周期函数就是在这些操作的前后触发执行的，在上面的源码中，使用 invokeArrayFns 函数进行生命周期函数的触发执行
 ```mermaid
 flowchart TD
 %% 调用patch处理组件元素为例
-A1("patch(container._vnode,vnode,container,...")-->A2("processComponent(n1, n2, container")
-
+A1("patch(container._vnode,vnode,container,...")--处理dom元素为例-->A2("processComponent(n1, n2, container")
 
 A2--创建-->b6("mountComponent(n2, container, anchor")
 A2--更新-->b7("updateComponent(n1, n2,optimized)")
+
+%% 创建proxy
+b6--1data中声明数据-->d1("setupComponent(instance")-->d2("setupStatefulComponent(instance")--2-->d3("handleSetupResult(instance,setupResult,isSSR)")-->d4("finishComponentSetup(instance")-->d5("applyOptions(instance)")-->d6("reactive(target)")
+
+d2--1-->d9("setup()返回setupResult")
+
+b13(setup声明调用reactive)--1直接调用-->d6
+
+d6-->d7("createReactiveObject(target,false,mutableHandlers){<br/>proxy=new Proxy(target,collectionHandlers|baseHandlers);return proxy}")
+
+
+%% 依赖收集和组件挂载等生命周期
+b6--2依赖收集和组件挂载组件更新-->b8("setupRenderEffect(instance,initialVNode,container,anchor")--1-->b9("new ReactiveEffect初始化effect")
+
+b8--2生命周期在componentUpdateFn-->b10("effect.run()内部调用componentUpdateFn组件的初始挂载和更新")
+
+b10-->b11(renderComponentRoot)-->b12("render(props)会触发一次依赖收集")
+```
+
+## data更新
+```mermaid
+flowchart TD
+A1(data改变)-->b1("set(target,key,value,receiver)")--触发副作用-->b4("trigger(target,'set',key, value,oldValue)")-->b5("triggerEffects(dep)")-->b6("triggerEffect(effect)")
+
+A1-->b2("get(target,key,receiver")--收集依赖-->b3("track(target,'get',key)")
+
+b3-->b7("trackEffects(dep, eventInfo)")
 ```
 
 ## 第一步
@@ -69,8 +103,6 @@ function createRenderer(options) {
   return baseCreateRenderer(options);
 }
 ```
-
-
 
 ## createApp大致的流程，这里再总结下整个过程
 1. 执行 createApp 首先会创建渲染器，这里要注意的是存在2种渲染器类型，并且它们都是通过延迟创建的，主要目的是当用户只引用reactive响应式框架的时候，方便进行tree-shaking优化。且两种渲染器都是基于 baseCreateRender 方法来实现。
@@ -177,16 +209,18 @@ function createAppAPI(render, hydrate) {
 讲述新组件挂载流程，关于组件更新放后面
 
 ## A.mount的源码之createVNode
+
+`type`
+```
+type 属性用于描述 VNode 的类型，VNode 的类型有很多种，这里我们看下 string 和 Component 类型，当 VNode 的 type 属性是字符串的时候，说明当前的 VNode 描述的是普通的元素，当 VNode 的 type 是 Component 的时候，说明当前的 VNode 描述的是一个组件。
+```
+
+
 在创建虚拟节点时，会进行一些类型检查、正规化、克隆、块树节点追踪、兼容Vue2等操作。最后只是单纯地返回了一个虚拟节点对象。总结，createVNode做了如下几件事：
 1. 对属性props标准化
 2. 将VNode类型信息进行编码为位图
 3. 创建VNode对象
 4. 对子节点进行标准化
-
-VNode的是一个描述DOM的JavaScript对象,作用:
-* 跨平台
-* 为数据驱动视图提供了媒介
-* 对于频繁通过JavaScript操作DOM的场景，VNode性能更优，因为它会等收集到足够的改变时，再将这些变化一次性应用到真实的DOM上。
 ```javaScript
 // 第一步是根据组件和组件属性，生成一个VNode虚拟节点。
 const vnode = createVNode(rootComponent as Component, rootProps)

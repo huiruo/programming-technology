@@ -5,15 +5,21 @@ setup-->onBeforeMount-->onMounted
 beforeCreate-->created--> beforeMount-->mounted
 
 // 见： 00-vue3-vue2生命周期-keep-alive.md
-beforeCreate() -> setup()
-created() -> setup()
-beforeMount() -> onBeforeMount()
-mounted() -> onMounted()
-beforeUpdate() -> onBeforeUpdate()
-updated() -> onUpdated()
-beforeDestroy() -> onBeforeUnmount()
-destroyed() -> onUnmounted()
-errorCaptured() -> onErrorCaptured()
+beforeCreate()    <--> setup()
+created()         <--> setup()
+beforeMount()     <--> onBeforeMount()
+mounted()         <--> onMounted()
+
+// 界面还没更新 但是data里面的数据是最新的。即页面尚未和最新的data里面的数据包同步
+beforeUpdate()    <--> onBeforeUpdate()
+// 表示页面和data里面的数据已经包吃同步了 都是最新的
+updated()         <--> onUpdated()
+
+// 当执行这个生命周期钩子的时候 vue的实例从运行阶段进入销毁阶段 此时实例身上的data 还有 methods处于可用的状态
+beforeDestroy()   <--> onBeforeUnmount()
+// 表示组件已经完全被销毁了 组件中所有的实例方法都是不能用了
+destroyed()       <--> onUnmounted()
+errorCaptured()   <--> onErrorCaptured()
 ```
 2. 接收 Props 不同,setup,this
 3. vue3 包含在一个反应状态（Reactive State）变量中
