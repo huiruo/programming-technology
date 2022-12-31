@@ -1,9 +1,9 @@
-## vue2响应式原理：
+## 1. 前言：vue2响应式原理：
 * 在 Vue2 里内部通过 Object.defineProperty API 劫持数据的变化，深度遍历 data 函数里的对象，给对象里每一个属性设置 getter、setter。
 * 触发 getter 会通过 Dep 类做依赖收集操作，收集当前 Dep.target, 也就是 watcher。
 * 触发 setter，执行 dep.notify 通知收集到的各类 watcher 更新，如 computed watcher、user watcher 、渲染 watcher。
 
-### Object.defineProperty 不足
+### 1-2. Object.defineProperty 不足
 1. 无法检测对象的 property 的添加或移除。而对于这个缺陷，Vue2 提供了 vm.$set 和全局的 Vue.set API 让我们能够向对象添加响应式的 property
 
 2. Object.defineProperty 的不能监听对数组索引的改动以及数组 length 的改动,vue2 处理方式也同上
@@ -11,7 +11,7 @@
 Proxy 对象能够利用 handler 陷阱在 get、set 时捕获到任何变动，也能监听对数组索引的改动以及 数组 length 的改动。
 
 
-## Vue3响应式原理：
+## 2. Vue3响应式原理：
 * Vue3 用 ES6的Proxy 重构了响应式，new Proxy(target, handler)
 * Proxy 的 get handle 里 执行track() 用来跟踪收集依赖(收集 activeEffect，也就是 effect )
 * Proxy 的 set handle 里执行 trigger() 用来触发响应(执行收集的 effect)

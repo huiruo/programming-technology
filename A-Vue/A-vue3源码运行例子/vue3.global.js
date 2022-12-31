@@ -2559,9 +2559,9 @@ var Vue = (function (exports) {
         // withProxy is a proxy with a different `has` trap only for
         // runtime-compiled render functions using `with` block.
         const proxyToUse = withProxy || proxy;
-        console.log('test:render', { test: render })
+        console.log('vnode-构建:调用render函数', { test: render })
         result = normalizeVNode(render.call(proxyToUse, proxyToUse, renderCache, props, setupState, data, ctx));
-        console.log('test:render', { test: result })
+        console.log('vnode-构建:调用render返回结果:', { test: result })
         fallthroughAttrs = attrs;
       }
       else {
@@ -6669,7 +6669,7 @@ var Vue = (function (exports) {
 
       // 新旧节点是同一个对象，直接返回
       if (n1 === n2) {
-        console.log(`%c运行时==>重点：新旧节点是同一个对象，直接返回:`, 'color:red')
+        console.log(`%c运行时==>patch：新旧节点是同一个对象，直接返回:`, 'color:red')
         return;
       }
       // patching & not same type, unmount old tree
@@ -6689,19 +6689,19 @@ var Vue = (function (exports) {
 
       const { type, ref, shapeFlag } = n2;
 
-      console.log(`%c运行时==>重点：开启patch,n1为旧节点、n2为新节点:`, 'color:yellow')
+      console.log(`%c运行时==>patch开启,n1旧节点、n2新节点:`, 'color:yellow', { type, n1, n2 })
       // 根据vNode类型，执行不同的算法
       switch (type) {
         case Text:
-          console.log(`%c调用patch处理文本节点:`, 'color:red')
+          console.log(`%c运行时==>patch处理文本节点:`, 'color:red')
           processText(n1, n2, container, anchor);
           break;
         case Comment:
-          console.log(`%c调用patch处理注释节点:`, 'color:red')
+          console.log(`%c运行时==>patch处理注释节点:`, 'color:red')
           processCommentNode(n1, n2, container, anchor);
           break;
         case Static:
-          console.log(`%c调用patch处理静态节点:`, 'color:red')
+          console.log(`%c运行时==>patch处理静态节点:`, 'color:red')
           if (n1 == null) {
             mountStaticNode(n2, container, anchor, isSVG);
           }
@@ -6710,24 +6710,24 @@ var Vue = (function (exports) {
           }
           break;
         case Fragment:
-          console.log(`%c调用patch处理Fragment元素:`, 'color:red')
+          console.log(`%c运行时==>patch处理Fragment元素:`, 'color:red')
           processFragment(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
           break;
         default:
           if (shapeFlag & 1 /* ShapeFlags.ELEMENT */) {
-            console.log(`%c较为重点的1:ELEMENT类型:调用processElement处理DOM元素:`, 'color:red')
+            console.log(`%c运行时==>patch-->较为重点的1:ELEMENT类型:调用processElement处理DOM元素:`, 'color:red')
             processElement(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
           }
           else if (shapeFlag & 6 /* ShapeFlags.COMPONENT */) {
-            console.log(`%c较为重点的2:COMPONENT:调用processComponent处理组件元素:`, 'color:red')
+            console.log(`%c运行时==>patch-->较为重点的2:COMPONENT:调用processComponent处理组件元素:`, 'color:red')
             processComponent(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
           }
           else if (shapeFlag & 64 /* ShapeFlags.TELEPORT */) {
-            console.log(`%c调用patch处理TELEPORT:`, 'color:red')
+            console.log(`%c运行时==>patch处理TELEPORT:`, 'color:red')
             type.process(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized, internals);
           }
           else if (shapeFlag & 128 /* ShapeFlags.SUSPENSE */) {
-            console.log(`%c调用patch处理SUSPENSE:`, 'color:red')
+            console.log(`%c运行时==>patch处理SUSPENSE:`, 'color:red')
             type.process(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized, internals);
           }
           else {
@@ -7397,7 +7397,7 @@ var Vue = (function (exports) {
         }
       };
       // create reactive effect for rendering
-      console.log('依赖收集==>setupRenderEffect:3调用ReactiveEffect 创建一个副作用:', componentUpdateFn)
+      console.log('依赖收集==>setupRenderEffect:3调用ReactiveEffect 创建一个副作用:', { componentUpdateFn })
       const effect = (instance.effect = new ReactiveEffect(componentUpdateFn, () => queueJob(update), instance.scope // track it in component's effect scope
       ));
       console.log('依赖收集==>a,关键：调用effect.run()为了触发一下依赖收集')
@@ -7910,11 +7910,10 @@ var Vue = (function (exports) {
     };
 
     const render = (vnode, container, isSVG) => {
-      console.log('%c调用render之render1：', 'color:red', vnode, 'container:', container)
       if (vnode == null) {
         // 没有传入新的虚拟节点，当存在旧虚拟节点，则卸载旧虚拟节点
         if (container._vnode) {
-          console.log('%c调用render之render2：', 'color:red', '虚拟节点不存在，则销毁')
+          console.log('%crender:-->虚拟节点不存在，则销毁', 'color:red', '')
           unmount(container._vnode, null, null, true);
         }
       }
@@ -7923,7 +7922,7 @@ var Vue = (function (exports) {
         // 第一个参数: 旧的虚拟节点
         // 第二个参数：新的vnode
         // 第三个参数：vnode转化为dom，最终要挂载的dom容器
-        console.log('%c调用render之render3：存在新虚拟节点，则执行patch算法，比较新旧虚拟节点,虚拟节点存在，创建或更新', 'color:red')
+        console.log('%crender:-->存在新虚拟节点，则执行patch算法，比较新旧虚拟节点,虚拟节点存在，创建或更新', 'color:red')
         patch(container._vnode || null, vnode, container, null, null, null, isSVG);
       }
       flushPreFlushCbs();
@@ -8453,7 +8452,7 @@ var Vue = (function (exports) {
       currentBlock.push(vnode);
     }
 
-    console.log(`%ccreateBaseVNode:`, 'color:green', vnode)
+    console.log('%cvnode-构建:b-->createBaseVNode返回值', 'color:green', { type, vnode })
     return vnode;
   }
   const createVNode = (createVNodeWithArgsTransform);
@@ -8463,9 +8462,9 @@ var Vue = (function (exports) {
         warn$1(`Invalid vnode type when creating vnode: ${type}.`);
       }
       type = Comment;
-      console.log('%c_createVNode,不传type，默认Comment类型的虚拟节点', 'color:green', type)
+      console.log('%cvnode-构建:a-->不传type，默认Comment类型的虚拟节点', 'color:green', type)
     }
-    console.log('%c_createVNode：', 'color:green', type)
+    console.log('%cvnode-构建:a-->', 'color:green', type)
     if (isVNode(type)) {
       // createVNode receiving an existing vnode. This happens in cases like
       // <component :is="vnode"/>
@@ -8483,7 +8482,7 @@ var Vue = (function (exports) {
         }
       }
       cloned.patchFlag |= -2 /* PatchFlags.BAIL */;
-      console.log('%c_createVNode,已经是虚拟节点，则克隆一个，返回:', 'color:green', type)
+      console.log('%ccvnode-构建:a-->已经是虚拟节点，则克隆一个，返回:', 'color:green', type)
       return cloned;
     }
     // class component normalization.
@@ -8492,7 +8491,7 @@ var Vue = (function (exports) {
     }
     // class & style normalization.
     if (props) {
-      console.log('%c_createVNode,style和class标准化：', 'color:green', type)
+      console.log('%ccvnode-构建:a-->style和class标准化：', 'color:green', type)
       // for reactive or proxy objects, we need to clone it to enable mutation.
       props = guardReactiveProps(props);
       let { class: klass, style } = props;
@@ -8917,7 +8916,7 @@ var Vue = (function (exports) {
         setup.length > 1 ? createSetupContext(instance) : null);
       setCurrentInstance(instance);
       pauseTracking();
-      console.log('%c响应式=>setupStatefulComponent调用setup()返回setupResult', 'color:chartreuse', 'setup', setup)
+      console.log('%c响应式=>setupStatefulComponent调用setup()返回setupResult', 'color:chartreuse', { setup })
       const setupResult = callWithErrorHandling(setup, instance, 0 /* ErrorCodes.SETUP_FUNCTION */, [shallowReadonly(instance.props), setupContext]);
       resetTracking();
       unsetCurrentInstance();
@@ -11994,7 +11993,7 @@ var Vue = (function (exports) {
       onWarn: options.onWarn //用户的错误处理函数
     }
   */
-    console.log('探究初始化:baseParse生成ast 参数content：', content, '参数options:', options)
+    console.log('探究初始化:baseParse生成ast 参数：', { content, options })
     const context = createParserContext(content, options);
     const start = getCursor(context);
     // 生成ast根节点，节点的数据结构将在之后进行解读
@@ -16320,9 +16319,9 @@ var Vue = (function (exports) {
       opts.isCustomElement = tag => !!customElements.get(tag);
     }
 
-    console.log('探究初始化:compileToFunction==>：', template)
+    console.log('探究初始化:compileToFunction==>：', { template: template })
     const { code } = compile$1(template, opts);
-    console.log('%c探究初始化结束:compileToFunction==>调用compile$1 生成由AST生成的code：', "color:yellow", { test: code })
+    console.log('%c探究初始化结束:compileToFunction==>调用compile$1 生成由AST生成的code：', "color:yellow", { code: code })
 
     function onError(err, asWarning = false) {
       const message = asWarning
@@ -16338,7 +16337,7 @@ var Vue = (function (exports) {
     // the wildcard object.
     const render = (new Function(code)());
     render._rc = true;
-    console.log('%c探究初始化结束:compileToFunction==>将 render code 转化为 function：', "color:yellow", { test: render })
+    console.log('%c探究初始化结束:compileToFunction==>将 render code 转化为 function：', "color:yellow", { render: render })
     console.log('%c探究初始化结束:compileToFunction==>将 render放入缓存：', "color:yellow")
     return (compileCache[key] = render);
   }
