@@ -1,9 +1,13 @@
 ## 1. AST-->render()总览
+Vue 文件是如何被 compile-core 编译核心模块编译成渲染函数的
+* 生成ast对象
+* 将ast对象作为参数传入transform函数，对 ast 节点进行转换操作
+* 将ast对象作为参数传入generate函数，返回编译结果
 ```mermaid
 flowchart TD
 A1(baseCompile)-->A2(baseParse生成ast)-->A3(transform对ast进行转换)
 
-A3-->A4(generate根据变换后的ast生成code并返回)
+A3-->A4(generate根据变换后的ast生成code并返回)--组件挂载和更新的逻辑-->A5("patch()用vnode对象构建的DOM元素")-->A6("根据VNode类型的不同使用不同的函数进行处理")
 ```
 
 ## 2. 编译AST,转换AST为render()
@@ -104,13 +108,74 @@ b3-->b7("trackEffects(dep, eventInfo)")
 ```
 
 ## 前言
-* compiler表示template编译成有规律的数据结构，即AST抽象语法树
+* compiler表示template-->AST抽象语法树
 
-* reactivity表示data数据可以被监控，通过proxy语法来实现
+* reactivity表示响应式,effect 副作用函数（Vue3中已经没有了watcher概念,由effect取而代之）
+```
+1. Vue3 用 ES6的Proxy 重构了响应式，new Proxy(target, handler)
 
+2. Proxy 的 get handle 里 执行track() 用来收集依赖(收集 activeEffect，也就是 effect )
+3. Proxy 的 set handle 里执行 trigger() 用来触发响应(执行收集的 effect)
+```
 * runtime表示运行时相关功能，虚拟DOM(即：VNode)、diff算法、真实DOM操作等
 
-1. 将 compileToFunction()注册到 runtime,然后调用compileToFunction()
+
+### 例子1：探究初始化:compile调用baseParse返回ast
+```
+00-辅-compile调用baseParse返回ast.json
+```
+
+### 例子2:生成由AST生成的code转化的render函数
+```javaScript
+function render(_ctx, _cache) {
+  with (_ctx) {
+    const { createElementVNode: _createElementVNode, toDisplayString: _toDisplayString, openBlock: _openBlock, createElementBlock: _createElementBlock } = _Vue
+
+    return (_openBlock(), _createElementBlock("div", null, [
+      _createElementVNode("button", {
+        onClick: onClickText,
+        class: "btn"
+      }, "Hello world,Click me", 8 /* PROPS */, _hoisted_1),
+      _createElementVNode("div", null, [
+        _createElementVNode("span", null, "ruo-" + _toDisplayString(msg), 1 /* TEXT */)
+      ])
+    ]))
+  }
+}
+```
+
+### 例子3:调用render返回vnode
+注意：
+```html
+<div>
+  <button class="btn">Hello world,Click me</button>
+  <span>ruo-改变我</span>
+  <!--
+  注释节点也会被模板引擎编译
+  <div v-if="showDiv">
+    被你发现了
+  </div>
+  -->
+</div>
+```
+
+不带注释代码
+![](./img/vue3-vnode构建实例-不带注释.png)
+![](./img/vue3-vnode构建实例.png)
+
+# 一. AST 创建
+进行复杂的解析的目的是为了获得一棵关于源码的AST树
+
+`变换AST的结构，使它在不失去原本的语义的情况下，对源码进行优化。`
+
+code抽象语法树AST,对源代码的结构抽象。因此我们对该树进行语义分析，通过变换该抽象结构，而不改变原来的语义，达到优化的目的等等。
+```
+vue3新特性：transform中的hoistStatic发生静态提升
+
+hoistStatic其会递归ast并发现一些不会变的节点与属性，给他们打上可以静态提升的标记。在生成代码字符串阶段，将其序列化成字符串、以减少编译和渲染成本。
+```
+
+1. 将compileToFunction()注册到 runtime,然后调用compileToFunction()
 ```javaScript
 console.log('探究初始化==>将编译函数注册到运行时')
 registerRuntimeCompiler(compileToFunction);
@@ -180,15 +245,13 @@ function compileToFunction(template, options) {
 }
 ```
 
-3. 如上代码：将code传入Funtion生成匿名函数并调用；
+
+3. 如源码：将code传入Funtion生成匿名函数并调用
 最终将匿名函数返回结果render进行key为源html字符串，value为render变量的缓存。
+```javaScript
+const render = (new Function(code)())
+```
 
-code抽象语法树AST,对源代码的结构抽象。因此我们对该树进行语义分析，通过变换该抽象结构，而不改变原来的语义，达到优化的目的等等。
-
-# 一. AST 创建
-进行复杂的解析的目的是为了获得一棵关于源码的AST树
-
-`接下来是的阶段是，我们曾在讲解AST时，提及过的变换，变换AST的结构，使它在不失去原本的语义的情况下，对源码进行优化。`
 
 ### 1-1.模板元素解析例子：
 ```html
@@ -1190,7 +1253,25 @@ export const helperNameMap: any = {
 
 我们在平时开发，使用的便是运行时包中的函数。让我们从vue应用的构建函数createApp开始。
 
-# vnode 创建
+# 四. vnode 创建
+通过 VNode描述真实 DOM,可以渲染出页面中真实的 DOM
+
+VNode 是通过组件的 render 函数创建出来的，我们平时在开发中，一般都是使用 template 字符串描述页面内容，这个模板字符串会被 Vue 的编译器编译成 render 函数(用于描述组件渲染内容的是 render 函数)，`在Vue的运行时，render函数会转化成vnode。`
+* 1. 跨平台
+* 2. 数据驱动视图提升开发效率
+* 对于频繁通过JavaScript操作DOM的场景，VNode性能更优，因为它会等收集到足够的改变时，再将这些变化一次性应用到真实的DOM上。
+```
+频繁的去操作dom，会导致页面卡顿，性能差，如何去减少dom操作是性能优化的一个关键点。
+```
+* 组件挂载和更新和vnode的关系,diff算法提升效率
+
+### 组件挂载和更新和vnode的关系
+组件刚开始渲染的时候，首先需要通过组件的 render 函数结合当前的状态生成 vnode，然后通过 vnode 创建出对应的真实DOM 节点，最后把创建出来的DOM节点输出到页面中。
+
+当组件中的状态发生了变化的时候，这个组件便会重新渲染，使用组件的 redner 函数结合最新的状态生成最新的 vnode，注意，这一次 Vue 不会直接使用新的 vnode 生成 DOM 节点输出到页面上，而是将本次生成的最新的 vnode 和上一次渲染使用的 vnode 进行比较（diff 算法）;
+
+计算出哪些节点需要更新，然后到页面中去更新需要更新的节点，其他无需更新的节点则不需要做任何操作。通过这种方式，每次组件重新渲染的时候，都可以保证对真实 DOM 最小的操作量，以此来提高性能。
+
 ## 第一步createApp()-->ensureRenderer()
 我们在平时开发，使用的便是运行时包中的构建函数createApp开始:
 * 1.创建app实例，并返回该实例
@@ -1237,6 +1318,16 @@ function createRenderer(options) {
 
 ### 2-1. 下面展示了baseCreateRenderer定义的函数:patch render
 * 结尾return createAppAPI(render, hydrate)
+
+组件挂载和更新的逻辑都写在渲染器中 patch
+
+会根据 VNode 类型的不同使用不同的函数进行处理，如果当前的 VNode 表示的是组件的话，则会使用 processComponent 函数进行处理
+
+```
+见：
+## 第一步. patch 阶段: render()-->patch()
+```
+
 ```javaScript
 function baseCreateRenderer(options, createHydrationFns) {
   console.log('运行时==>baseCreateRenderer：', options, createHydrationFns)
@@ -2024,6 +2115,24 @@ flowchart LR
 template-->ast-->a1("render()")--执行render-->VNode
 ```
 
+```
+1. effect.run()内部调用componentUpdateFn组件的初始挂载和更新
+
+2. 调用renderComponentRoot
+```
+
+renderComponentRoot函数，传参为instance对象
+
+renderComponentRoot函数内部首先通过render!.call(proxyToUse, ...)方法执行instance.render函数(本文开头已经展示了依本例模版解析后的render函数)，传参是proxyToUse(就是withProxy对象)和renderCache(空数组[])下面详细解析render函数的执行过程:
+```
+具体函数见
+### 例子2:生成由AST生成的code转化的render函数
+```
+
+参考：https://juejin.cn/post/7006988485949128741
+1. 整个函数体都在with(_ctx){}中，如果对with的用法不熟悉，可以了解下。简单来说就是在with花括号里面的属性不需要指定命名空间，会自动指向_ctx对象；with(Proxy){key}会触发Proxy代理的has钩子函数(_ctx对象就是withProxy对象，本文上面提到了withProxy就是instance.ctx对象通过Proxy代理后的对象)
+2. const { ... } = _Vue对_Vue对象进行结构，首先会触发_ctx的has钩子函数(因为ctx上并没有_Vue属性，这里就忽略，后续再详细解析has钩子函数)。回顾到之前解析完成的render String开头部分，定义const _Vue = Vue，也就是_Vue就是全局的Vue对象。那解构出来的一系列方法就是全局的Vue暴露的方法(toDisplayString, createVNode, createTextVNode, Fragment, openBlock, createBlock)
+
 ```javaScript
 function renderComponentRoot(instance) {
   const { type: Component, vnode, proxy, withProxy, props, propsOptions: [propsOptions], slots, attrs, emit, render, renderCache, data, setupState, ctx, inheritAttrs } = instance;
@@ -2055,23 +2164,322 @@ function renderComponentRoot(instance) {
 }
 ```
 
-组件刚开始渲染的时候，首先需要通过组件的 render 函数结合当前的状态生成 vnode，然后通过 vnode 创建出对应的真实DOM 节点，最后把创建出来的DOM节点输出到页面中。
 
-然后当组件中的状态发生了变化的时候，这个组件便会重新渲染，使用组件的 redner 函数结合最新的状态生成最新的 vnode，注意，这一次 Vue 不会直接使用新的 vnode 生成 DOM 节点输出到页面上，而是将本次生成的最新的 vnode 和上一次渲染使用的 vnode 进行比较（diff 算法），计算出哪些节点需要更新，然后到页面中去更新需要更新的节点，其他无需更新的节点则不需要做任何操作。通过这种方式，每次组件重新渲染的时候，都可以保证对真实 DOM 最小的操作量，以此来提高性能。
-
-对象字面量能够很好的描述真实 DOM，通过 VNode 可以渲染出页面中真实的 DOM,VNode 是通过组件的 render 函数创建出来的，我们平时在开发中，一般都是使用 template 字符串描述页面内容，这个模板字符串会被 Vue 的编译器编译成 render 函数，所以在 Vue 的运行时，用于描述组件渲染内容的是 render 函数。
-* 跨平台
-* 为数据驱动视图提供了媒介
-* 对于频繁通过JavaScript操作DOM的场景，VNode性能更优，因为它会等收集到足够的改变时，再将这些变化一次性应用到真实的DOM上。
+3. 后续执行render函数中return的内容。首先是执行openBlock函数(无参数)
+```javaScript
+// openBlock函数内部给全局的currentBlock变量赋值空数组[]，然后将这个变量push到另一个全局的空数组blockStack中，即blockStack=[[]]，后续创建VNode会使用这个全局数组
+function openBlock(disableTracking = false) {
+  blockStack.push((currentBlock = disableTracking ? null : []));
+}
 ```
-频繁的去操作dom，会导致页面卡顿，性能差，如何去减少dom操作是性能优化的一个关键点。
+3. 解析动态数据(依赖收集至全局targetMap对象)
+然后执行createBlock方法，其中第三个参数是数组，数组的第一项是createTextVNode函数的返回值，执行createTextVNode函数时参数有两个，第一个参数是toDisplayString方法的执行结果，参数是message。这里因为with(_ctx){message}会触发has钩子函数，看下has钩子函数的具体内部实现
 ```
-* 每当组件渲染的时候，Vue 都会将当前的 vnode 保存起来，当下次组件重新渲染的时候，就可以将最新的 vnode 和上次渲染保存的 vnode 做比较（diff算法），然后只对有差异的DOM节点做更新操作。
+判断属性名称key值不是以'_'开头的，并且不是特定的一些字符串，类似Object、Boolean等(具体可以去看下isGloballyWhitelisted方法的内部实现)，此时key值为message，所以has为true
 
-Vue 文件是如何被 compile-core 编译核心模块编译成渲染函数的
-* 生成ast对象
-* 将ast对象作为参数传入transform函数，对 ast 节点进行转换操作
-* 将ast对象作为参数传入generate函数，返回编译结果
+之后获取messgae的值，_ctx.message会触发get钩子函数，先判断属性名是否等于Symbol.unscopables，此时key值为message，所以执行PublicInstanceProxyHandlers的get方法。一起看下PublicInstanceProxyHandlers内部get方法的具体实现
+```
+
+```javaScript
+const PublicInstanceProxyHandlers = {
+  get({ _: instance }, key) {
+    const { ctx, setupState, data, props, accessCache, type, appContext } = instance;
+    // for internal formatters to know that this is a Vue instance
+    if (key === '__isVue') {
+      return true;
+    }
+    // data / props / ctx
+    // This getter gets called for every property access on the render context
+    // during render and is a major hotspot. The most expensive part of this
+    // is the multiple hasOwn() calls. It's much faster to do a simple property
+    // access on a plain object, so we use an accessCache object (with null
+    // prototype) to memoize what access type a key corresponds to.
+    let normalizedProps;
+    if (key[0] !== '$') {
+      const n = accessCache[key];
+      if (n !== undefined) {
+        switch (n) {
+          case 1 /* AccessTypes.SETUP */:
+            return setupState[key];
+          case 2 /* AccessTypes.DATA */:
+            return data[key];
+          case 4 /* AccessTypes.CONTEXT */:
+            return ctx[key];
+          case 3 /* AccessTypes.PROPS */:
+            return props[key];
+          // default: just fallthrough
+        }
+      }
+      else if (hasSetupBinding(setupState, key)) {
+        accessCache[key] = 1 /* AccessTypes.SETUP */;
+        return setupState[key];
+      }
+      else if (data !== EMPTY_OBJ && hasOwn(data, key)) {
+        accessCache[key] = 2 /* AccessTypes.DATA */;
+        return data[key];
+      }
+      else if (
+        // only cache other properties when instance has declared (thus stable)
+        // props
+        (normalizedProps = instance.propsOptions[0]) &&
+        hasOwn(normalizedProps, key)) {
+        accessCache[key] = 3 /* AccessTypes.PROPS */;
+        return props[key];
+      }
+      else if (ctx !== EMPTY_OBJ && hasOwn(ctx, key)) {
+        accessCache[key] = 4 /* AccessTypes.CONTEXT */;
+        return ctx[key];
+      }
+      else if (shouldCacheAccess) {
+        accessCache[key] = 0 /* AccessTypes.OTHER */;
+      }
+    }
+    const publicGetter = publicPropertiesMap[key];
+    let cssModule, globalProperties;
+    // public $xxx properties
+    if (publicGetter) {
+      if (key === '$attrs') {
+        track(instance, "get" /* TrackOpTypes.GET */, key);
+        markAttrsAccessed();
+      }
+      return publicGetter(instance);
+    }
+    else if (
+      // css module (injected by vue-loader)
+      (cssModule = type.__cssModules) &&
+      (cssModule = cssModule[key])) {
+      return cssModule;
+    }
+    else if (ctx !== EMPTY_OBJ && hasOwn(ctx, key)) {
+      // user may set custom properties to `this` that start with `$`
+      accessCache[key] = 4 /* AccessTypes.CONTEXT */;
+      return ctx[key];
+    }
+    else if (
+      // global properties
+      ((globalProperties = appContext.config.globalProperties),
+        hasOwn(globalProperties, key))) {
+      {
+        return globalProperties[key];
+      }
+    }
+    else if (currentRenderingInstance &&
+      (!isString(key) ||
+        // #1091 avoid internal isRef/isVNode checks on component instance leading
+        // to infinite warning loop
+        key.indexOf('__v') !== 0)) {
+      if (data !== EMPTY_OBJ && isReservedPrefix(key[0]) && hasOwn(data, key)) {
+        warn$1(`Property ${JSON.stringify(key)} must be accessed via $data because it starts with a reserved ` +
+          `character ("$" or "_") and is not proxied on the render context.`);
+      }
+      else if (instance === currentRenderingInstance) {
+        warn$1(`Property ${JSON.stringify(key)} was accessed during render ` +
+          `but is not defined on instance.`);
+      }
+    }
+  },
+  set({ _: instance }, key, value) {
+    const { data, setupState, ctx } = instance;
+    if (hasSetupBinding(setupState, key)) {
+      setupState[key] = value;
+      return true;
+    }
+    else if (setupState.__isScriptSetup &&
+      hasOwn(setupState, key)) {
+      warn$1(`Cannot mutate <script setup> binding "${key}" from Options API.`);
+      return false;
+    }
+    else if (data !== EMPTY_OBJ && hasOwn(data, key)) {
+      data[key] = value;
+      return true;
+    }
+    else if (hasOwn(instance.props, key)) {
+      warn$1(`Attempting to mutate prop "${key}". Props are readonly.`);
+      return false;
+    }
+    if (key[0] === '$' && key.slice(1) in instance) {
+      warn$1(`Attempting to mutate public property "${key}". ` +
+        `Properties starting with $ are reserved and readonly.`);
+      return false;
+    }
+    else {
+      if (key in instance.appContext.config.globalProperties) {
+        Object.defineProperty(ctx, key, {
+          enumerable: true,
+          configurable: true,
+          value
+        });
+      }
+      else {
+        ctx[key] = value;
+      }
+    }
+    return true;
+  },
+  has({ _: { data, setupState, accessCache, ctx, appContext, propsOptions } }, key) {
+    let normalizedProps;
+    return (!!accessCache[key] ||
+      (data !== EMPTY_OBJ && hasOwn(data, key)) ||
+      hasSetupBinding(setupState, key) ||
+      ((normalizedProps = propsOptions[0]) && hasOwn(normalizedProps, key)) ||
+      hasOwn(ctx, key) ||
+      hasOwn(publicPropertiesMap, key) ||
+      hasOwn(appContext.config.globalProperties, key));
+  },
+  defineProperty(target, key, descriptor) {
+    if (descriptor.get != null) {
+      // invalidate key cache of a getter based property #5417
+      target._.accessCache[key] = 0;
+    }
+    else if (hasOwn(descriptor, 'value')) {
+      this.set(target, key, descriptor.value, null);
+    }
+    return Reflect.defineProperty(target, key, descriptor);
+  }
+};
+{
+  PublicInstanceProxyHandlers.ownKeys = (target) => {
+    warn$1(`Avoid app logic that relies on enumerating keys on a component instance. ` +
+      `The keys will be empty in production mode to avoid performance overhead.`);
+    return Reflect.ownKeys(target);
+  };
+}
+const RuntimeCompiledPublicInstanceProxyHandlers = /*#__PURE__*/ extend({}, PublicInstanceProxyHandlers, {
+  get(target, key) {
+    // fast path for unscopables when using `with` block
+    if (key === Symbol.unscopables) {
+      return;
+    }
+    return PublicInstanceProxyHandlers.get(target, key, target);
+  },
+  has(_, key) {
+    const has = key[0] !== '_' && !isGloballyWhitelisted(key);
+    if (!has && PublicInstanceProxyHandlers.has(_, key)) {
+      warn$1(`Property ${JSON.stringify(key)} should not start with _ which is a reserved prefix for Vue internals.`);
+    }
+    return has;
+  }
+});
+```
+
+
+```
+首先会对target对象进行结构，获取'_'属性的值，target就是_ctx对象，本文前面提到了_ctx是instance.ctx的Proxy代理对象(关于instance.ctx对象上的_属性的值，在文章二"双向数据绑定"中提到了instance对象的创建，并新增_属性值为instance)。回归到get钩子函数中，判断属性名key(message)不是以'$'开头的，并且不存在于instance的accessCache缓存对象中，再判断instance.setupState属性不是空对象，并且message存在于setupState对象中(在文章三"双向数据绑定"中提到instance.setupState就是setup函数执行完成之后返回的结果再通过Proxy代理的对象)。本例中setupState不是空对象并且message也是此对象的属性，所以设置accessCache[message] = 0，最终返回setupState[message]的值。
+
+因为setupState对象是setup函数返回值的Proxy对象，所以执行setupState[message]时会触发get钩子函数
+```
+
+首先通过Reflect方法获取setupState.message的值(文章三"双向数据绑定"中解析了message属性值是调用ref方法返回的RefImpl实例对象)。然后调用unref方法，判断入参的__v_isRef属性是否为true，本例中message符合，所以返回ref.value(message.value)。因为message是RefImpl的实例对象，所以获取属性时会触发get钩子函数
+
+钩子函数内部先调用track函数收集依赖，函数内部先判断，targetMap(WeakMap对象)全局对象中是否存在target属性(初始化挂载是不存在的)，若不存在则执行targetMap.set(target, (depsMap = new Map()))，设置key=target，value=new Map()(空的Map对象)，然后获取depsMap(Map对象)中key=message的属性值，因为depsMap是新建的空Map对象，所以也不存在message属性，固执行depsMap.set(key, (dep = new Set()))，设置key=message，value=new Set()(空的Set对象)。因为dep是空的Set对象，所以往dep对象中新增activeEffect全局变量(本文上述解析过activeEffect就是reactiveEffect函数)，然后在reactiveEffect方法的deps数组中添加dep对象(Set对象)。后续在修改message的值之后触发set钩子函数时会执行依赖，更新DOM
+
+5. createTextVNode创建文本vnode对象
+回归到render函数中，根据一系列的Proxy代理得到message="测试数据"(以本例为模版解析)，开始执行toDisplayString('测试数据')
+
+toDisplayString函数最终返回String(val)就是'测试数据'
+```javaScript
+const toDisplayString = (val) => {
+  return isString(val)
+    ? val
+    : val == null
+      ? ''
+      : isArray(val) ||
+        (isObject(val) &&
+          (val.toString === objectToString || !isFunction(val.toString)))
+        ? JSON.stringify(val, replacer, 2)
+        : String(val);
+};
+```
+
+6. 接着开始执行createTextVNode函数，参数为"测试数据" 和 1
+
+createTextVNode函数内部调用createVNode方法，参数为Symbol('Text')、null、'测试数据 '、1，在文章二"数据双向绑定"中已经简单解析了createVNode方法的作用，主要是生成一个VNode对象，在初始化执行app.mount时会使用，初始化执行时type是调用createApp传入的参数。现在是用来生成一个文本节点，看下createVNode内部的具体实现
+
+首先根据type类型给shapeFlag赋值，因为type是Symbol('Text')，所以shapeFlag=0
+
+
+创建vnode对象，其中patchFlag属性值为1
+
+
+接着调用normalizeChildren函数，此函数主要是用来处理节点的children属性
+
+```javaScript
+export function createTextVNode(text: string = ' ', flag: number = 0): VNode {
+  return createVNode(Text, null, text, flag)
+}
+```
+
+```javaScript
+export function normalizeChildren(vnode: VNode, children: unknown) {
+  let type = 0
+  const { shapeFlag } = vnode
+  if (children == null) {}
+  else if (isArray(children)) {}
+  else if (typeof children === 'object') {}
+  else if (isFunction(children)) {}
+  else {
+    children = String(children)
+    // force teleport children to array so it can be moved around
+    if (shapeFlag & ShapeFlags.TELEPORT) {
+      type = ShapeFlags.ARRAY_CHILDREN
+      children = [createTextVNode(children as string)]
+    } else {
+      type = ShapeFlags.TEXT_CHILDREN // 8
+    } 
+  }
+  vnode.children = children as VNodeNormalizedChildren
+  vnode.shapeFlag |= type
+}
+```
+
+createVNode创建元素vnode对象
+
+回归到render方法中，执行完文本节点之后开始执行元素节点(button节点，直接调用createVNode方法)，参数为"button", { onClick: modifyMessage }, '修改数据', 8。
+
+7. 回归到render方法中，执行完文本节点之后开始执行元素节点(button节点，直接调用createVNode方法)，参数为"button", { onClick: modifyMessage }, '修改数据', 8。
+```
+根据type是字符串类型，所以shapeFlag赋值为1
+
+
+创建vnode对象，赋值props属性为{ onClick: modifyMessage }，patchFlag为8
+
+
+调用normalizeChildren处理children属性，此元素节点的children也是字符串，所以vnode.children='修改数据'，vnode.shapeFlag = 1 | 8 = 9，最后将vnode对象存入currentBlock数组中并返回vnode对象
+```
+
+createBlock创建根vnode对象
+ 
+8. 回归到render函数中，当中括号的两个方法(createTextVNode、createVNode)执行完成后，最后执行createBlock方法生成根vnode对象
+
+在createBlock内部首先是调用createVNode方法创建vnode节点，参数是Symbol('Fragment')、null、[文本vnode对象, 元素vnode对象]、64、true
+```
+createVNode方法中首先根据type是Symbol类型，shapeFlag赋值为0。创建vnode对象，patchFlag值为64
+
+
+执行normalizeChildren函数，处理children属性时，因为children是数组，所以vnode.shapeFlag = 0 | 16 = 16
+
+
+因为传入的isBlockNode=true，所以不会执行currentBlock.push(vnode)，最后返回vnode对象
+```
+
+```javaScript
+function createBlock(type, props, children, patchFlag, dynamicProps) {
+  return setupBlock(createVNode(type, props, children, patchFlag, dynamicProps, true /* isBlock: prevent a block from tracking itself */));
+}
+
+export function closeBlock() {
+  blockStack.pop()
+  currentBlock = blockStack[blockStack.length - 1] || null
+}
+```
+
+回归到createBlock函数中，将vnode.dynamicChildren属性赋值为currentBlock数组(数组中包含文本vnode对象 和 元素vnode对象两个元素，也就是vnode.children)。然后执行closeBlock
+
+该方法内将blockStack数组中的最后一项移除。由本文上述解析可知，blockStack数组中只有一个元素，就是currentBlock数组，然后将currentBlock赋值为null。最后createBlock方法返回vnode对象，type为Symbol('Fragment')，children数组包含两个vnode对象，是type为Symbol('Text')的文本 和 type为'button'的元素。至此render函数的解析已经完全结束了。
+
+### 总结
+解析render函数的执行过程，首先解析动态数据message时触发get钩子函数，调用track方法进行依赖的收集(activeEffect变量收集到全局的targetMap对象中)；然后调用createTextVNode方法构建文本vnode对象；调用createVNode方法构建button元素的vnode对象；最后调用createBlock方法构建根vnode对象。后续将详细解析patch方法利用生成的vnode对象构建出真正的DOM元素
+
 
 # 构建好了VNode，接下来是渲染
 首先会创建虚拟节点VNode，然后执行渲染逻辑。若创建的VNode为null，则组件执行卸载过程，否则执行创建或者更新流程。
@@ -2106,6 +2514,12 @@ patch 的过程中主要完成以下几件事情：
 2. 当新旧节点不是同一个类型时直接卸载旧节点，isSameVNodeType的代码很简单，就只是n1.type === n2.type && n1.key === n2.key，即除了类型以外，还要判断key是否相同。
 3. 当新节点被打上BAIL标记，则退出优化模式。
 4. 根据节点的不同类型，执行不同的处理算法。
+
+组件挂载和更新的逻辑都写在渲染器中 patch
+
+会根据 VNode 类型的不同使用不同的函数进行处理，如果当前的 VNode 表示的是组件的话，则会使用 processComponent 函数进行处理
+
+
 ```javaScript
 function baseCreateRenderer(options, createHydrationFns) {
   const patch = (n1, n2, container, anchor = null, parentComponent = null, parentSuspense = null, isSVG = false, slotScopeIds = null, optimized = isHmrUpdating ? false : !!n2.dynamicChildren) => {
@@ -2115,6 +2529,10 @@ function baseCreateRenderer(options, createHydrationFns) {
 ```
 
 ## 第二步. 较为重点的COMPONENT和ELEMENT类型,又由于COMPONENT是由ELEMENT组成的，根节点是COMPONENT，我们先从processComponent开始
+
+会根据 VNode 类型的不同使用不同的函数进行处理，如果当前的 VNode 表示的是组件的话，则会使用 processComponent 函数进行处理
+
+判断 oldVNode 是否存在，如果存在的话，则执行 updateComponent 函数进行组件的更新，如果不存在的话，则执行 mountComponent 函数进行组件的挂载，我们首先看组件的挂载。
 
 ### 2-1. 例子1：processComponent
 processComponent较为简单，考虑三种情况进行处理:
@@ -2145,7 +2563,177 @@ function baseCreateRenderer(options, createHydrationFns) {
 }
 ```
 
-### 2-2. 例子2：处理组件和DOM元素为例:mountElement
+### 2-2. 例子1.组件的挂载:mountComponent
+在mountComponent，首先创建组件的实例，每渲染一次组件，就会创建一个对应的实例，组件实例就是一个对象，这个对象维护着组件运行过程中的所有信息，例如：注册的生命周期函数、组件上次渲染的 VNode，组件状态等等。一个组件实例的内容如下所示：
+```javaScript
+const instance: ComponentInternalInstance = {
+  uid: uid++,
+  vnode,
+  type,
+  parent,
+  appContext,
+  root: null!, // to be immediately set
+  next: null,
+  subTree: null!, // will be set synchronously right after creation
+  effect: null!,
+  update: null!, // will be set synchronously right after creation
+  scope: new EffectScope(true /* detached */),
+  render: null,
+  proxy: null,
+  exposed: null,
+  exposeProxy: null,
+  withProxy: null,
+  provides: parent ? parent.provides : Object.create(appContext.provides),
+  accessCache: null!,
+  renderCache: [],
+ 
+  // local resolved assets
+  components: null,
+  directives: null,
+ 
+  // resolved props and emits options
+  propsOptions: normalizePropsOptions(type, appContext),
+  emitsOptions: normalizeEmitsOptions(type, appContext),
+ 
+  // emit
+  emit: null!, // to be set immediately
+  emitted: null,
+ 
+  // props default value
+  propsDefaults: EMPTY_OBJ,
+ 
+  // inheritAttrs
+  inheritAttrs: type.inheritAttrs,
+ 
+  // state
+  ctx: EMPTY_OBJ,
+  data: EMPTY_OBJ,
+  props: EMPTY_OBJ,
+  attrs: EMPTY_OBJ,
+  slots: EMPTY_OBJ,
+  refs: EMPTY_OBJ,
+  setupState: EMPTY_OBJ,
+  setupContext: null,
+ 
+  // suspense related
+  suspense,
+  suspenseId: suspense ? suspense.pendingId : 0,
+  asyncDep: null,
+  asyncResolved: false,
+ 
+  // lifecycle hooks
+  // not using enums here because it results in computed properties
+  isMounted: false,
+  isUnmounted: false,
+  isDeactivated: false,
+  bc: null,
+  c: null,
+  bm: null,
+  m: null,
+  bu: null,
+  u: null,
+  um: null,
+  bum: null,
+  da: null,
+  a: null,
+  rtg: null,
+  rtc: null,
+  ec: null,
+  sp: null
+}
+```
+
+上面的对象包含着很多的状态信息，是实现组件化一个很重要的内容。
+
+创建完组件实例后，Vue 使用 setupComponent 函数进行一些数据的解析和初始化，调用的 setupRenderEffect 函数是重点。
+
+### 2-3. 例子1.组件的更新
+当后续 render 函数依赖的响应式数据发生变化的时候，会再次触发执行 componentUpdateFn 函数进行组件的重新渲染
+
+## 2-4. 组件生命周期的实现原理和setup()
+主要分为两部分，
+* 生命周期的注册以及
+* 生命周期的执行。
+```
+生命周期函数触发的代码在 setupRenderEffect 函数中
+```
+
+首先说生命周期的注册，这里以 setup 函数中进行的生命周期注册为例。
+
+在 setupStatefulComponent 函数中，获取用户编写的 setup 函数，执行它并获取 setup 函数的返回值 setupResult。
+
+setup 函数只会在组件挂载的时候执行一次，setup 函数既可以返回一个对象，也可以返回一个函数，如果返回的是一个对象的话，这个对象中的数据可以像 data 和 props 一样使用，如果返回的是一个函数的话，这个函数会被当成组件的 render 函数。
+
+setup 函数中执行 onMounted 等生命周期注册函数时，Vue 会将我们想要注册的生命周期函数保存到组件实例中，组件实例用于保存生命周期函数的属性如下所示：
+```javaScript
+const instance: ComponentInternalInstance = {
+  // lifecycle hooks
+  bc: null,
+  c: null,
+  bm: null,
+  m: null,
+  bu: null,
+  u: null,
+  um: null,
+  bum: null,
+  da: null,
+  a: null,
+  rtg: null,
+  rtc: null,
+  ec: null,
+  sp: null
+}
+```
+
+接下来看生命周期注册函数的内容，以 onMounted 函数为例：
+```javaScript
+export const onMounted = createHook(LifecycleHooks.MOUNTED)
+ 
+export const createHook =
+  <T extends Function = () => any>(lifecycle: LifecycleHooks) =>
+  (hook: T, target: ComponentInternalInstance | null = currentInstance) =>
+    // post-create lifecycle registrations are noops during SSR (except for serverPrefetch)
+    (!isInSSRComponentSetup || lifecycle === LifecycleHooks.SERVER_PREFETCH) &&
+    injectHook(lifecycle, hook, target)
+ 
+export function injectHook(
+  type: LifecycleHooks,
+  hook: Function & { __weh?: Function },
+  target: ComponentInternalInstance | null = currentInstance,
+  prepend: boolean = false
+): Function | undefined {
+  if (target) {
+    const hooks = target[type] || (target[type] = [])
+    const wrappedHook =
+      hook.__weh ||
+      (hook.__weh = (...args: unknown[]) => {
+        if (target.isUnmounted) {
+          return
+        }
+        // disable tracking inside all lifecycle hooks
+        // since they can potentially be called inside effects.
+        pauseTracking()
+        // Set currentInstance during hook invocation.
+        // This assumes the hook does not synchronously trigger other hooks, which
+        // can only be false when the user does something really funky.
+        setCurrentInstance(target)
+        const res = callWithAsyncErrorHandling(hook, target, type, args)
+        unsetCurrentInstance()
+        resetTracking()
+        return res
+      })
+    if (prepend) {
+      hooks.unshift(wrappedHook)
+    } else {
+      hooks.push(wrappedHook)
+    }
+    return wrappedHook
+  }
+}
+```
+
+
+### 2-4. 例子2：处理组件和DOM元素为例:mountElement
 看挂载元素的过程，下面看看 mountElement 方法,整个过程如下：
 
 1. 创建DOM元素，如果 vNode.el 非空且为静态虚拟节点，则直接克隆一个。

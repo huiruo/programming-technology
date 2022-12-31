@@ -18,13 +18,16 @@
   <div id="root">
     <div>
       <button v-on:click='onClickText' class="btn">Hello world,Click me</button>
-      <span>ruo-{{msg}}</span>
-      <!-- <div v-if="showDiv">
-        被你发现了
-      </div> -->
+      <div><span>ruo-{{msg}}</span></div>
     </div>
   </div>
   <script>
+    /*
+    注释节点也会被模板引擎编译
+    <!-- <div v-if="showDiv">
+      被你发现了
+    </div>
+    */
     const { ref, reactive, nextTick } = Vue
 
     Vue.createApp({

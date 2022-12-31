@@ -2559,9 +2559,9 @@ var Vue = (function (exports) {
         // withProxy is a proxy with a different `has` trap only for
         // runtime-compiled render functions using `with` block.
         const proxyToUse = withProxy || proxy;
-        console.log('vnode-构建:调用render函数', { test: render })
+        console.log('vnode-构建:start-->调用render函数', { render })
         result = normalizeVNode(render.call(proxyToUse, proxyToUse, renderCache, props, setupState, data, ctx));
-        console.log('vnode-构建:调用render返回结果:', { test: result })
+        console.log('vnode-构建:end-->调用render返回vnode:', { result })
         fallthroughAttrs = attrs;
       }
       else {
@@ -15777,7 +15777,7 @@ var Vue = (function (exports) {
     }
     const ast = isString(template) ? baseParse(template, options) : template;
 
-    console.log('探究初始化:compile$1 调用 baseParse 返回ast：', ast)
+    console.log('探究初始化:compile调用baseParse返回ast：', { ast })
     // 根据前缀标识，获取预设转换函数
     const [nodeTransforms, directiveTransforms] = getBaseTransformPreset();
     // 对ast进行变换
@@ -15791,12 +15791,12 @@ var Vue = (function (exports) {
       )
     }));
     // 根据ast生成vue入口需要的编译代码code
-    console.log('%c探究初始化:最后一步,compile$1 调用 transform对ast进行generate code：', 'color:yellow', ast)
+    console.log('%c探究初始化:最后一步,compile调用transform对ast进行generate code：', 'color:yellow', ast)
     const generateAst = generate(ast, extend({}, options, {
       prefixIdentifiers
     }));
 
-    console.log('探究初始化:compile$1 调用 generate根据ast生成vue入口需要的编译代码code：', generateAst)
+    console.log('探究初始化:compile调用generate根据ast生成vue入口需要的编译代码code：', generateAst)
     return generateAst
   }
 
@@ -16321,7 +16321,6 @@ var Vue = (function (exports) {
 
     console.log('探究初始化:compileToFunction==>：', { template: template })
     const { code } = compile$1(template, opts);
-    console.log('%c探究初始化结束:compileToFunction==>调用compile$1 生成由AST生成的code：', "color:yellow", { code: code })
 
     function onError(err, asWarning = false) {
       const message = asWarning
@@ -16337,8 +16336,8 @@ var Vue = (function (exports) {
     // the wildcard object.
     const render = (new Function(code)());
     render._rc = true;
-    console.log('%c探究初始化结束:compileToFunction==>将 render code 转化为 function：', "color:yellow", { render: render })
-    console.log('%c探究初始化结束:compileToFunction==>将 render放入缓存：', "color:yellow")
+    console.log('%c探究初始化结束:compileToFunction==>生成由AST生成的code转化的render函数：', "color:yellow", { render: render })
+    console.log('%c探究初始化结束:compileToFunction==>render放入缓存：', "color:yellow")
     return (compileCache[key] = render);
   }
 
