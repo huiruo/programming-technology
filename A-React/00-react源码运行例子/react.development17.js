@@ -732,7 +732,7 @@
 
   function createElement(type, config, children) {
     console.log('分割线dev-createElement=======>start')
-    console.log('deve17_createElement构建Ast树:', 'type:', type, 'config:', config, 'children:', children)
+    console.log('deve17_createElement构建Ast树:', { type, config, children })
     console.log('分割线dev-createElement=======>end')
     var propName; // Reserved names are extracted
 

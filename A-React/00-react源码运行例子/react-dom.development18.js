@@ -9826,7 +9826,7 @@
       }
     }
 
-    console.log(`%c createElement`, 'color:green', type, 'props', props, 'createElement domElement:', domElement)
+    console.log(`%c=createElement`, 'color:green', { type, props, domElement })
     return domElement;
   }
   function createTextNode(text, rootContainerElement) {
@@ -10946,9 +10946,9 @@
 
       parentNamespace = hostContextDev.namespace;
     }
-    console.log('%c ==completeWork 调用createElement为当前fiber创建dom实例=======>start', 'color:green')
+    console.log('%c=completeWork 调用createElement为当前fiber创建dom实例=======>start', 'color:green')
     var domElement = createElement(type, props, rootContainerInstance, parentNamespace);
-    console.log('%c domElement', 'color:grey', domElement);
+    console.log('%c=domElement', 'color:grey', { domElement });
     precacheFiberNode(internalInstanceHandle, domElement);
     updateFiberProps(domElement, props);
     return domElement;
@@ -14941,7 +14941,7 @@
         }
       } // Insert
 
-      console.log('%c createFiberFromElement 1', 'color:grey');
+      console.log('%c=createFiberFromElement 1', 'color:grey');
       var created = createFiberFromElement(element, returnFiber.mode, lanes);
       created.ref = coerceRef(returnFiber, current, element);
       created.return = returnFiber;
@@ -14990,7 +14990,7 @@
         switch (newChild.$$typeof) {
           case REACT_ELEMENT_TYPE:
             {
-              console.log('%c createFiberFromElement 3', 'color:grey');
+              console.log('%c=createFiberFromElement 3', 'color:grey');
               var _created = createFiberFromElement(newChild, returnFiber.mode, lanes);
 
               _created.ref = coerceRef(returnFiber, null, newChild);
@@ -15010,7 +15010,7 @@
             {
               var payload = newChild._payload;
               var init = newChild._init;
-              console.log(`%c createChild 3`, 'color:grey')
+              console.log(`%c=createChild 3`, 'color:grey')
               return createChild(returnFiber, init(payload), lanes);
             }
         }
@@ -15287,7 +15287,7 @@
         // If we don't have any more existing children we can choose a fast path
         // since the rest will all be insertions.
         for (; newIdx < newChildren.length; newIdx++) {
-          console.log(`%c createChild 1`, 'color:grey')
+          console.log(`%c=createChild 1`, 'color:grey')
           var _newFiber = createChild(returnFiber, newChildren[newIdx], lanes);
 
           if (_newFiber === null) {
@@ -15482,7 +15482,7 @@
         // If we don't have any more existing children we can choose a fast path
         // since the rest will all be insertions.
         for (; !step.done; newIdx++, step = newChildren.next()) {
-          console.log(`%c createChild 2`, 'color:grey')
+          console.log(`%c=createChild 2`, 'color:grey')
           var _newFiber3 = createChild(returnFiber, step.value, lanes);
 
           if (_newFiber3 === null) {
@@ -15635,7 +15635,7 @@
         created.return = returnFiber;
         return created;
       } else {
-        console.log('%c ChildReconciler 中调用 createFiberFromElement 2', 'color:yellow');
+        console.log('%c=ChildReconciler 中调用 createFiberFromElement 2', 'color:yellow');
         var _created4 = createFiberFromElement(element, returnFiber.mode, lanes);
 
         _created4.ref = coerceRef(returnFiber, currentFirstChild, element);
@@ -19066,8 +19066,8 @@
       // children to find all the terminal nodes.
       var node = workInProgress.child;
 
-      console.log('==appendAllChildren:parent', parent);
-      console.log('==appendAllChildren: workInProgress', workInProgress);
+      console.log('==appendAllChildren:parent', { parent });
+      console.log('==appendAllChildren:', { workInProgress });
 
       // 这里采用的是深度优先遍历的方式 此时这里的instance为插入完的dom实例, 并把对应的节点赋值到当前Fiber节点的stateNode上
       while (node !== null) {
@@ -19437,15 +19437,15 @@
               }
             } else {
               // 为当前fiber创建dom实例
-              console.log('%c ==completeWork HostComponent 调用createInstance为当前fiber创建dom实例=======>start', 'color:green')
+              console.log('%c=completeWork HostComponent 调用createInstance为当前fiber创建dom实例=======>start', 'color:green')
               var instance = createInstance(type, newProps, rootContainerInstance, currentHostContext, workInProgress);
-              console.log('%c ==completeWork HostComponent=======>start', 'color:green')
+              console.log('%c=completeWork HostComponent=======>start', 'color:green')
               // 将子孙dom节点追加到当前创建的dom节点上
-              console.log('%c ==completeWork HostComponent-将子孙dom节点追加到当前创建的dom节点上', 'color:green', instance)
+              console.log('%c=completeWork HostComponent-将子孙dom节点追加到当前创建的dom节点上', 'color:green', { instance })
               appendAllChildren(instance, workInProgress, false, false);
               // 将当前创建的挂载到stateNode属性上
               workInProgress.stateNode = instance; // Certain renderers require commit-time effects for initial mount.
-              console.log('%c ==completeWork HostComponent:将当前创建的挂载到workInProgress.stateNode:', 'color:green', workInProgress.stateNode);
+              console.log('%c=completeWork HostComponent:将当前创建的挂载到workInProgress.stateNode:', 'color:green', { workInProgress_stateNode: workInProgress.stateNode });
               // (eg DOM renderer supports auto-focus for certain elements).
               // Make sure such renderers get scheduled for later work.
               // 处理props（绑定回调，设置dom属性...）
@@ -19992,7 +19992,7 @@
       // won't update its child set by applying minimal side-effects. Instead,
       // we will add them all to the child before it gets rendered. That means
       // we can optimize this reconciliation pass by not tracking side-effects.
-      console.log('%c reconcileChildren mount', 'yellow');
+      console.log('%c=reconcileChildren mount', 'yellow');
       workInProgress.child = mountChildFibers(workInProgress, null, nextChildren, renderLanes);
     } else {
       // If the current child is the same as the work in progress, it means that
@@ -20000,7 +20000,7 @@
       // the clone algorithm to create a copy of all the current children.
       // If we had any progressed work already, that is invalid at this point so
       // let's throw it out.
-      console.log('%c reconcileChildren update', 'yellow');
+      console.log('%c=reconcileChildren update', 'yellow');
       workInProgress.child = reconcileChildFibers(workInProgress, current.child, nextChildren, renderLanes);
     }
   }
@@ -20125,7 +20125,7 @@
         }
       }
 
-      console.log('%c ==updateMemoComponent调用createFiberFromTypeAndProps-->return', 'color:yellow', child);
+      console.log('%c=updateMemoComponent调用createFiberFromTypeAndProps-->return', 'color:yellow', { child });
       var child = createFiberFromTypeAndProps(Component.type, null, nextProps, workInProgress, workInProgress.mode, renderLanes);
       child.ref = workInProgress.ref;
       child.return = workInProgress;
@@ -22379,18 +22379,18 @@
   function beginWork(current, workInProgress, renderLanes) {
     {
       if (workInProgress._debugNeedsRemount && current !== null) {
-        console.log('%c ===beginWork===end 0', 'color:magenta')
+        console.log('%c=beginWork===end 0', 'color:magenta')
         // This will restart the begin phase with a new fiber.
-        console.log('%c ==beginWork调用 createFiberFromTypeAndProps(workInProgress.type, workInProgress,...)', 'color:yellow');
+        console.log('%c=beginWork调用 createFiberFromTypeAndProps(workInProgress.type, workInProgress,...)', 'color:yellow');
         return remountFiber(current, workInProgress, createFiberFromTypeAndProps(workInProgress.type, workInProgress.key, workInProgress.pendingProps, workInProgress._debugOwner || null, workInProgress.mode, workInProgress.lanes));
       }
     }
 
-    console.log('%c ===开始beginWork===start1', 'color:magenta', getFiberName(workInProgress), 'current:', current, 'renderLanes:', renderLanes, 'workInProgress:', workInProgress)
+    console.log('%c=开始beginWork===start1', 'color:magenta', { getFiberName: getFiberName(workInProgress), current, renderLanes, workInProgress })
 
     // update时：如果current存在可能存在优化路径，可以复用current（即上一次更新的Fiber节点）
     if (current !== null) {
-      console.log('%c ===开始beginWork===update', 'color:magenta')
+      console.log('%c=开始beginWork===update', 'color:magenta')
       // 通过一系列判断逻辑判断当前节点是否可复用，用didReceiveUpdate来标记，
       // 若可复用则走attemptEarlyBailoutIfNoScheduledUpdate。
       var oldProps = current.memoizedProps;
@@ -22411,7 +22411,7 @@
           (workInProgress.flags & DidCapture) === NoFlags) {
           // No pending updates or context. Bail out now.
           didReceiveUpdate = false;
-          console.log('%c ===beginWork===end 1', 'color:magenta')
+          console.log('%c=beginWork===end 1', 'color:magenta')
           // bailoutOnAlreadyFinishedWork=> cloneChildFibers 顾名思义，会直接克隆一个fiber节点并返回。
           return attemptEarlyBailoutIfNoScheduledUpdate(current, workInProgress, renderLanes);
         }
@@ -22457,14 +22457,14 @@
     switch (workInProgress.tag) {
       case IndeterminateComponent:
         {
-          console.log('%c ===beginWork===end 2 mountIndeterminateComponent', 'color:magenta')
+          console.log('%c=beginWork===end 2 mountIndeterminateComponent', 'color:magenta')
           return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
         }
 
       case LazyComponent:
         {
           var elementType = workInProgress.elementType;
-          console.log('%c ===beginWork===end 3 mountLazyComponent', 'color:magenta')
+          console.log('%c=beginWork===end 3 mountLazyComponent', 'color:magenta')
           return mountLazyComponent(current, workInProgress, elementType, renderLanes);
         }
 
@@ -22473,7 +22473,7 @@
           var Component = workInProgress.type;
           var unresolvedProps = workInProgress.pendingProps;
           var resolvedProps = workInProgress.elementType === Component ? unresolvedProps : resolveDefaultProps(Component, unresolvedProps);
-          console.log('%c ===beginWork===end 4 updateFunctionComponent', 'color:magenta')
+          console.log('%c=beginWork===end 4 updateFunctionComponent', 'color:magenta')
           return updateFunctionComponent(current, workInProgress, Component, resolvedProps, renderLanes);
         }
 
@@ -22483,28 +22483,28 @@
           var _unresolvedProps = workInProgress.pendingProps;
 
           var _resolvedProps = workInProgress.elementType === _Component ? _unresolvedProps : resolveDefaultProps(_Component, _unresolvedProps);
-          console.log('%c ===beginWork===end 5 updateClassComponent', 'color:magenta')
+          console.log('%c=beginWork===end 5 updateClassComponent', 'color:magenta')
           return updateClassComponent(current, workInProgress, _Component, _resolvedProps, renderLanes);
         }
 
       case HostRoot:
-        console.log('%c ===beginWork===end 6 updateHostRoot', 'color:magenta')
+        console.log('%c=beginWork===end 6 updateHostRoot', 'color:magenta')
         return updateHostRoot(current, workInProgress, renderLanes);
 
       case HostComponent:
-        console.log(`%c ===beginWork===end 7 updateHostComponent$1,即原生 DOM 组件对应的 Fiber节点:${workInProgress.type}`, 'color:magenta')
+        console.log(`%c=beginWork===end 7 updateHostComponent$1,即原生 DOM 组件对应的 Fiber节点:`, 'color:magenta', { type: workInProgress.type })
         return updateHostComponent$1(current, workInProgress, renderLanes);
 
       case HostText:
-        console.log('%c ===beginWork===end 8 updateHostText$1', 'color:magenta')
+        console.log('%c=beginWork===end 8 updateHostText$1', 'color:magenta')
         return updateHostText$1(current, workInProgress);
 
       case SuspenseComponent:
-        console.log('%c ===beginWork===end 9 updateSuspenseComponent', 'color:magenta')
+        console.log('%c=beginWork===end 9 updateSuspenseComponent', 'color:magenta')
         return updateSuspenseComponent(current, workInProgress, renderLanes);
 
       case HostPortal:
-        console.log('%c ===beginWork===end 10 updatePortalComponent', 'color:magenta')
+        console.log('%c=beginWork===end 10 updatePortalComponent', 'color:magenta')
         return updatePortalComponent(current, workInProgress, renderLanes);
 
       case ForwardRef:
@@ -22514,28 +22514,28 @@
 
           var _resolvedProps2 = workInProgress.elementType === type ? _unresolvedProps2 : resolveDefaultProps(type, _unresolvedProps2);
 
-          console.log('%c ===beginWork===end 11 updateForwardRef', 'color:magenta')
+          console.log('%c=beginWork===end 11 updateForwardRef', 'color:magenta')
           return updateForwardRef(current, workInProgress, type, _resolvedProps2, renderLanes);
         }
 
       case Fragment:
-        console.log('%c ===beginWork===end 12 updateFragment', 'color:magenta')
+        console.log('%c=beginWork===end 12 updateFragment', 'color:magenta')
         return updateFragment(current, workInProgress, renderLanes);
 
       case Mode:
-        console.log('%c ===beginWork===end 13 updateMode', 'color:magenta')
+        console.log('%c=beginWork===end 13 updateMode', 'color:magenta')
         return updateMode(current, workInProgress, renderLanes);
 
       case Profiler:
-        console.log('%c ===beginWork===end 14 updateProfiler', 'color:magenta')
+        console.log('%c=beginWork===end 14 updateProfiler', 'color:magenta')
         return updateProfiler(current, workInProgress, renderLanes);
 
       case ContextProvider:
-        console.log('%c ===beginWork===end 15 updateContextProvider', 'color:magenta')
+        console.log('%c=beginWork===end 15 updateContextProvider', 'color:magenta')
         return updateContextProvider(current, workInProgress, renderLanes);
 
       case ContextConsumer:
-        console.log('%c ===beginWork===end 16 updateContextConsumer', 'color:magenta')
+        console.log('%c=beginWork===end 16 updateContextConsumer', 'color:magenta')
         return updateContextConsumer(current, workInProgress, renderLanes);
 
       case MemoComponent:
@@ -22557,13 +22557,13 @@
           }
 
           _resolvedProps3 = resolveDefaultProps(_type2.type, _resolvedProps3);
-          console.log('%c ===beginWork===end 17 updateMemoComponent', 'color:magenta')
+          console.log('%c=beginWork===end 17 updateMemoComponent', 'color:magenta')
           return updateMemoComponent(current, workInProgress, _type2, _resolvedProps3, renderLanes);
         }
 
       case SimpleMemoComponent:
         {
-          console.log('%c ===beginWork===end 18 updateSimpleMemoComponent', 'color:magenta')
+          console.log('%c=beginWork===end 18 updateSimpleMemoComponent', 'color:magenta')
           return updateSimpleMemoComponent(current, workInProgress, workInProgress.type, workInProgress.pendingProps, renderLanes);
         }
 
@@ -22573,13 +22573,13 @@
           var _unresolvedProps4 = workInProgress.pendingProps;
 
           var _resolvedProps4 = workInProgress.elementType === _Component2 ? _unresolvedProps4 : resolveDefaultProps(_Component2, _unresolvedProps4);
-          console.log('%c ===beginWork===end 19 mountIncompleteClassComponent', 'color:magenta')
+          console.log('%c=beginWork===end 19 mountIncompleteClassComponent', 'color:magenta')
           return mountIncompleteClassComponent(current, workInProgress, _Component2, _resolvedProps4, renderLanes);
         }
 
       case SuspenseListComponent:
         {
-          console.log('%c ===beginWork===end 20 updateSuspenseListComponent', 'color:magenta')
+          console.log('%c=beginWork===end 20 updateSuspenseListComponent', 'color:magenta')
           return updateSuspenseListComponent(current, workInProgress, renderLanes);
         }
 
@@ -22591,7 +22591,7 @@
 
       case OffscreenComponent:
         {
-          console.log('%c ===beginWork===end 21 updateOffscreenComponent', 'color:magenta')
+          console.log('%c=beginWork===end 21 updateOffscreenComponent', 'color:magenta')
           return updateOffscreenComponent(current, workInProgress, renderLanes);
         }
     }
@@ -22900,7 +22900,7 @@
   function commitBeforeMutationEffects(root, firstChild) {
 
     console.log('分割线commitBeforeMutationEffects=======>start')
-    console.log('commitBeforeMutationEffects:', root, firstChild)
+    console.log('commitBeforeMutationEffects:', { root, firstChild })
     console.log('分割线commitBeforeMutationEffects=======>end')
 
     focusedInstanceHandle = prepareForCommit(root.containerInfo);
@@ -25658,11 +25658,11 @@
           ReactCurrentActQueue$1.didScheduleLegacyUpdate = true;
         }
 
-        console.log('%c ==render阶段准备:,', 'color:red', 'ensureRootIsScheduled()调用performSyncWorkOnRoot()：异步更新legacy模式1==')
+        console.log('%c=render阶段准备:,', 'color:red', 'ensureRootIsScheduled()调用performSyncWorkOnRoot()：异步更新legacy模式1==')
         scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root));
       } else {
 
-        console.log('%c ==render阶段准备:,', 'color:red', 'ensureRootIsScheduled()调用performSyncWorkOnRoot()：异步更新legacy模式2==')
+        console.log('%c=render阶段准备:,', 'color:red', 'ensureRootIsScheduled()调用performSyncWorkOnRoot()：异步更新legacy模式2==')
         scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
       }
 
@@ -25714,7 +25714,7 @@
           break;
       }
       // console.log('更新流程-->0-c2: performConcurrentWorkOnRoot')
-      console.log('%c ==render阶段准备:', 'color:red', 'ensureRootIsScheduled()调用performConcurrentWorkOnRoot()--同步更新:concurrent模式==')
+      console.log('%c=render阶段准备:', 'color:red', 'ensureRootIsScheduled()调用performConcurrentWorkOnRoot()--同步更新:concurrent模式==')
       newCallbackNode = scheduleCallback$1(schedulerPriorityLevel, performConcurrentWorkOnRoot.bind(null, root));
     }
 
@@ -25769,7 +25769,7 @@
 
 
     var shouldTimeSlice = !includesBlockingLane(root, lanes) && !includesExpiredLane(root, lanes) && (!didTimeout);
-    console.log('==render阶段准备:performConcurrentWorkOnRoot()调用renderRootSync():同步更新concurrent模式:', shouldTimeSlice);
+    console.log('==render阶段准备:performConcurrentWorkOnRoot()调用renderRootSync():同步更新concurrent模式:', { shouldTimeSlice });
     var exitStatus = shouldTimeSlice ? renderRootConcurrent(root, lanes) : renderRootSync(root, lanes);
 
     if (exitStatus !== RootInProgress) {
@@ -26466,7 +26466,7 @@
 
     do {
       try {
-        console.log('%c ==render阶段准备:', 'color:red', 'renderRootSync()调用workLoopSync()-root:', root);
+        console.log('%c=render阶段准备:', 'color:red', 'renderRootSync()调用workLoopSync()-root:', { root });
         workLoopSync();
         break;
       } catch (thrownValue) {
@@ -26496,7 +26496,7 @@
   /** @noinline */
 
   function renderRootConcurrent(root, lanes) {
-    console.log('renderRootConcurrent--->1:', root);
+    console.log('renderRootConcurrent--->1:', { root });
     var prevExecutionContext = executionContext;
     executionContext |= RenderContext;
     var prevDispatcher = pushDispatcher(); // If the root or lanes have changed, throw out the existing stack
@@ -26531,7 +26531,7 @@
 
     do {
       try {
-        console.log('renderRootConcurrent--->', root);
+        console.log('renderRootConcurrent--->', { root });
         workLoopConcurrent();
         break;
       } catch (thrownValue) {
@@ -26569,16 +26569,16 @@
   let workInProgressNums = 1
   function workLoopSync() {
     // Already timed out, so perform work without checking if we need to yield.
-    console.log('%c render开始了!', 'color:red', 'workLoopSync在while循环中调用performUnitOfWork(),循环开始', workInProgress !== null, 'workInProgress:', workInProgress);
+    console.log('%c=render开始了!', 'color:red', 'workLoopSync在while循环中调用performUnitOfWork(),循环开始', workInProgress !== null, { workInProgress });
     while (workInProgress !== null) {
-      console.log('%c ==workLoopSync循环调用performUnitOfWork==start:', 'color:red', getFiberName(workInProgress), '循环中:', workInProgressNums, 'workInProgress:', workInProgress);
+      console.log('%c=workLoopSync循环调用performUnitOfWork==start:', 'color:red', '循环中:', { getFiberName: getFiberName(workInProgress), workInProgressNums, workInProgress });
       console.log('循环中:workInProgress.stateNode:', workInProgress.stateNode, 'fiber的实例，类组件场景下，是组件的类，HostComponent场景，是dom元素');
       console.log('循环中:父级fiber:return', workInProgress.return)
       console.log('循环中:子fiber:child', workInProgress.child)
       console.log('循环中:兄弟fiber:sibling', workInProgress.sibling)
       console.log('循环中:alternate:', workInProgress.alternate)
       console.log('循环中:', workInProgress.memoizedState, '类组件存储fiber的状态，函数组件存储hooks链表-memoizedState:')
-      console.log('%c ==workLoopSync循环调用performUnitOfWork==end', 'color:red');
+      console.log('%c=workLoopSync循环调用performUnitOfWork==end', 'color:red');
       performUnitOfWork(workInProgress);
     }
   }
@@ -26587,7 +26587,7 @@
     console.log('performUnitOfWork 1:workLoopConcurrent-->');
     // Perform work until Scheduler asks us to yield
     while (workInProgress !== null && !shouldYield()) {
-      console.log('performUnitOfWork 1:workLoopConcurrent-->while', workInProgress);
+      console.log('performUnitOfWork 1:workLoopConcurrent-->while', { workInProgress });
       performUnitOfWork(workInProgress);
     }
   }
@@ -26618,7 +26618,7 @@
     if (next === null) {
       // If this doesn't spawn new work, complete the current work.
       //此函数内部会帮我们找到下一个可执行的节点
-      console.log(`%c 无子节点，则代表当前的child链表已经遍历完,开启子组件链completeUnitOfWork:${unitOfWork.type}`, 'color:black');
+      console.log(`%c=无子节点，则代表当前的child链表已经遍历完,开启子组件链completeUnitOfWork`, 'color:black', { type: unitOfWork.type });
       completeUnitOfWork(unitOfWork);
     } else {
       workInProgress = next;
@@ -26633,10 +26633,10 @@
     if (typeof unitOfWork.type === 'function') {
       var re = /function\s*(\w*)/i;
       var matches = re.exec(unitOfWork.type);
-      // console.log('%c getFiberName:', 'color:green', matches[1])
+      // console.log('%c=getFiberName:', 'color:green', matches[1])
       return 'function ' + matches[1]
     } else {
-      // console.log('%c getFiberName:', 'color:green', unitOfWork.type)
+      // console.log('%c=getFiberName:', 'color:green', unitOfWork.type)
       return unitOfWork.type
     }
   }
@@ -26658,11 +26658,11 @@
         var next = void 0;
 
         if ((completedWork.mode & ProfileMode) === NoMode) {
-          // console.log(`%c ==开始completeWork-1-${completedWork.type}`, 'color:black')
-          console.log(`%c ==开始completeWork-1-${getFiberName(completedWork)}`, 'color:black')
+          // console.log(`%c=开始completeWork-1-${completedWork.type}`, 'color:black')
+          console.log(`%c=开始completeWork-1-`, 'color:black', { getFiberName: getFiberName(completedWork) })
           next = completeWork(current, completedWork, subtreeRenderLanes);
         } else {
-          console.log(`%c ==开始completeWork-2`, 'color:black')
+          console.log(`%c=开始completeWork-2`, 'color:black')
           startProfilerTimer(completedWork);
           next = completeWork(current, completedWork, subtreeRenderLanes); // Update render duration assuming we didn't error.
 
@@ -26727,14 +26727,14 @@
         // If there is more work to do in this returnFiber, do that next.
         // 若存在，便把siblingFiber节点作为下一个工作单元，
         // 继续执行performUnitOfWork，执行当前节点并尝试遍历当前节点所在的child链表
-        console.log(`%c completeUnitOfWork--${getFiberName(completedWork)}存在兄弟节点,把siblingFiber:${getFiberName(siblingFiber)}节点作为下一个工作单元`, 'color:grey')
-        console.log(`%c siblingFiber:`, 'color:grey', siblingFiber)
+        console.log(`%c=completeUnitOfWork--getFiberName:${getFiberName(completedWork)}存在兄弟节点,把siblingFiber:${getFiberName(siblingFiber)}节点作为下一个工作单元`, 'color:grey')
+        console.log(`%c=siblingFiber:`, 'color:grey', siblingFiber)
         workInProgress = siblingFiber;
         return;
       } // Otherwise, return to the parent
 
-      console.log(`%c completeUnitOfWork-${getFiberName(completedWork)}不存在兄弟节点,则回溯到父节点:returnFiber:${getFiberName(returnFiber)},尝试查找父节点的兄弟节点`, 'color:grey')
-      console.log(`%c returnFiber:`, 'color:grey', returnFiber)
+      console.log(`%c=completeUnitOfWork-getFiberName:${getFiberName(completedWork)}不存在兄弟节点,则回溯到父节点:returnFiber:${getFiberName(returnFiber)},尝试查找父节点的兄弟节点`, 'color:grey')
+      console.log(`%c=returnFiber:`, 'color:grey', { returnFiber })
       // 如果不存在兄弟节点，则回溯到父节点，尝试查找父节点的兄弟节点
       completedWork = returnFiber; // Update the next thing we're working on in case something throws.
       workInProgress = completedWork;
@@ -26751,8 +26751,7 @@
     // layout phases. Should be able to remove.
     var previousUpdateLanePriority = getCurrentUpdatePriority();
     var prevTransition = ReactCurrentBatchConfig$3.transition;
-    console.log('%c ===commitRoot===: %c 入口', 'color:red', 'color:blue', root);
-    console.log('===commitRoot===recoverableErrors:', recoverableErrors);
+    console.log('%c=commitRoot===: %c=入口', 'color:red', 'color:blue', { root, recoverableErrors });
     try {
       ReactCurrentBatchConfig$3.transition = null;
       setCurrentUpdatePriority(DiscreteEventPriority);
@@ -27498,10 +27497,10 @@
       // error See ReactErrorUtils for more information.
       // Before entering the begin phase, copy the work-in-progress onto a dummy
       // fiber. If beginWork throws, we'll use this to reset the state.
-      console.log('%c ===开始beginWork===start0', 'color:magenta')
-      console.log('%c assignFiberPropertiesInDEV-->', 'color:magenta');
+      console.log('%c=开始beginWork===start0', 'color:magenta')
+      console.log('%c=assignFiberPropertiesInDEV-->', 'color:magenta');
       var originalWorkInProgressCopy = assignFiberPropertiesInDEV(dummyFiber, unitOfWork);
-      console.log('%c assignFiberPropertiesInDEV-->', 'color:grey', originalWorkInProgressCopy);
+      console.log('%c=assignFiberPropertiesInDEV-->', 'color:grey', { originalWorkInProgressCopy });
 
       try {
         return beginWork(current, unitOfWork, lanes);
@@ -28109,7 +28108,7 @@
   }
 
   function FiberNode(tag, pendingProps, key, mode) {
-    console.log('%c ==FiberNode,fiber的协调,最底部开始赋值===', 'color:yellow')
+    console.log('%c=FiberNode,fiber的协调,最底部开始赋值===', 'color:yellow')
     // Instance
     this.tag = tag;
     this.key = key;
@@ -28190,9 +28189,9 @@
 
   var createFiber = function (tag, pendingProps, key, mode) {
     // $FlowFixMe: the shapes are exact here but Flow doesn't like constructors
-    console.log('%c ==createFiber中调用 new FiberNode-FiberNode返回值:', 'color:yellow')
+    console.log('%c=createFiber中调用 new FiberNode-FiberNode返回值:', 'color:yellow')
     var fiberNode = new FiberNode(tag, pendingProps, key, mode)
-    console.log('%c 返回值fiberNode:', 'color:grey', fiberNode);
+    console.log('%c=返回值fiberNode:', 'color:grey', { fiberNode });
     return fiberNode;
   };
 
@@ -28524,9 +28523,9 @@
       }
     }
 
-    console.log('%c createFiberFromTypeAndProps 中调用 createFiber return：', 'color:yellow')
+    console.log('%c=createFiberFromTypeAndProps 中调用 createFiber return：', 'color:yellow')
     var fiber = createFiber(fiberTag, pendingProps, key, mode);
-    console.log(`%c retrun fiber`, 'color:grey', fiber)
+    console.log(`%c=retrun fiber`, 'color:grey', { fiber })
     fiber.elementType = type;
     fiber.type = resolvedType;
     fiber.lanes = lanes;
@@ -28547,9 +28546,9 @@
     var type = element.type;
     var key = element.key;
     var pendingProps = element.props;
-    console.log('%c ==createFiberFromElement 调用 createFiberFromTypeAndProps-->return fiber：', 'color:yellow')
+    console.log('%c=createFiberFromElement 调用 createFiberFromTypeAndProps-->return fiber：', 'color:yellow')
     var fiber = createFiberFromTypeAndProps(type, key, pendingProps, owner, mode, lanes);
-    console.log('%c return fiber：', 'color:yellow', fiber)
+    console.log('%c=return fiber：', 'color:yellow', { fiber })
     {
       fiber._debugSource = element._source;
       fiber._debugOwner = element._owner;
@@ -29328,12 +29327,12 @@
     };
 
   function ReactDOMRoot(internalRoot) {
-    console.log('%c ==一切开始2:', 'color:red', 'ReactDOMRoot', internalRoot)
+    console.log('%c=一切开始2:', 'color:red', 'ReactDOMRoot', { internalRoot })
     this._internalRoot = internalRoot;
   }
 
   ReactDOMHydrationRoot.prototype.render = ReactDOMRoot.prototype.render = function (children) {
-    console.log('%c ==一切开始3:', 'color:red', 'ReactDOMRoot.prototype.render调用updateContainer()开启render阶段==', children);
+    console.log('%c=一切开始3:', 'color:red', 'ReactDOMRoot.prototype.render调用updateContainer()开启render阶段==', { children });
     var root = this._internalRoot;
 
     if (root === null) {
@@ -29431,7 +29430,7 @@
       }
     }
 
-    console.log('%c ===一切开始1:', 'color:red', 'createRoot', container, 'options:', options)
+    console.log('%c=一切开始1:', 'color:red', { createRoot: container, options })
     var root = createContainer(container, ConcurrentRoot, null, isStrictMode, concurrentUpdatesByDefaultOverride, identifierPrefix, onRecoverableError);
     markContainerAsRoot(root.current, container);
     var rootContainerElement = container.nodeType === COMMENT_NODE ? container.parentNode : container;
@@ -29894,7 +29893,7 @@
 
         if (/^(https?|file):$/.test(protocol)) {
           // eslint-disable-next-line react-internal/no-production-logging
-          console.info('%cDownload the React DevTools ' + 'for a better development experience: ' + 'https://reactjs.org/link/react-devtools' + (protocol === 'file:' ? '\nYou might need to use a local HTTP server (instead of file://): ' + 'https://reactjs.org/link/react-devtools-faq' : ''), 'font-weight:bold');
+          console.info('%c=Download the React DevTools ' + 'for a better development experience: ' + 'https://reactjs.org/link/react-devtools' + (protocol === 'file:' ? '\nYou might need to use a local HTTP server (instead of file://): ' + 'https://reactjs.org/link/react-devtools-faq' : ''), 'font-weight:bold');
         }
       }
     }

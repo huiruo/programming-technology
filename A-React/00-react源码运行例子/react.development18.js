@@ -770,7 +770,7 @@
    */
 
   function createElement(type, config, children) {
-    console.log('react.development18_createElement构建Ast树:', type, config, children)
+    console.log('react.development18_createElement构建Ast树:', { type, config, children })
     var propName; // Reserved names are extracted
 
     var props = {};
