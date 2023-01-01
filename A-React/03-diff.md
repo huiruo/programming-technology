@@ -1,6 +1,3 @@
-链接：https://juejin.cn/post/7040030267636973605
-## 一.前言
-
 React Diff算法
 将Virtual DOM树转换成actual DOM树的最少操作的过程 称为 协调（Reconciliaton）。 
 

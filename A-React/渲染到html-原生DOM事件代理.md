@@ -1,6 +1,4 @@
 ### react 17之前原生DOM事件代理
-有关虚拟DOM的事件机制，我曾专门写过一篇文章，有兴趣可以👇【React深入】React事件机制: https://juejin.im/post/6844903790198571021
-
 `React`的所有事件都通过 `document`进行统一分发。当真实 `Dom`触发事件后冒泡到 `document`后才会对 `React`事件进行处理。
 所以原生的事件会先执行，然后执行 `React`合成事件，最后执行真正在 `document`上挂载的事件
 `React`事件和原生事件最好不要混用。原生事件中如果执行了 `stopPropagation`方法，则会导致其他 `React`事件失效。因为所有元素的事件将无法冒泡到 `document`上，导致所有的 `React`事件都将无法被触发。。

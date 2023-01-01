@@ -19103,6 +19103,7 @@
       // If we have an alternate, that means this is an update and we need to
       // schedule a side-effect to do the updates.
       var oldProps = current.memoizedProps;
+      console.log(`%c=updateHostComponent更新流程`, 'color:chartreuse')
 
       if (oldProps === newProps) {
         // In mutation mode, this is sufficient for a bailout because
@@ -19390,7 +19391,7 @@
               }
             }
           }
-
+          console.log(`%c=completeWork->HostRoot调用updateHostContainer`, 'color:chartreuse')
           updateHostContainer(current, workInProgress);
           bubbleProperties(workInProgress);
 
@@ -19404,6 +19405,7 @@
           var type = workInProgress.type;
 
           if (current !== null && workInProgress.stateNode != null) {
+            console.log(`%c=completeWork->更新流程HostComponent调用updateHostComponent`, 'color:chartreuse')
             updateHostComponent(current, workInProgress, type, newProps, rootContainerInstance);
 
             if (current.ref !== workInProgress.ref) {
@@ -19437,15 +19439,14 @@
               }
             } else {
               // 为当前fiber创建dom实例
-              console.log('%c=completeWork HostComponent 调用createInstance为当前fiber创建dom实例=======>start', 'color:green')
+              console.log('%c=beginWork->HostComponent初始化流程调用createInstance为当前fiber创建dom实例==>start', 'color:chartreuse')
               var instance = createInstance(type, newProps, rootContainerInstance, currentHostContext, workInProgress);
-              console.log('%c=completeWork HostComponent=======>start', 'color:green')
               // 将子孙dom节点追加到当前创建的dom节点上
-              console.log('%c=completeWork HostComponent-将子孙dom节点追加到当前创建的dom节点上', 'color:green', { instance })
+              console.log('%c=beginWork->HostComponent初始化流程-将子孙dom节点追加到当前创建的dom节点上', 'color:green', { instance })
               appendAllChildren(instance, workInProgress, false, false);
               // 将当前创建的挂载到stateNode属性上
               workInProgress.stateNode = instance; // Certain renderers require commit-time effects for initial mount.
-              console.log('%c=completeWork HostComponent:将当前创建的挂载到workInProgress.stateNode:', 'color:green', { workInProgress_stateNode: workInProgress.stateNode });
+              console.log('%c=beginWork->HostComponent初始化流程将当前创建的挂载到workInProgress.stateNode:', 'color:green', { workInProgress_stateNode: workInProgress.stateNode });
               // (eg DOM renderer supports auto-focus for certain elements).
               // Make sure such renderers get scheduled for later work.
               // 处理props（绑定回调，设置dom属性...）
@@ -19471,7 +19472,7 @@
           if (current && workInProgress.stateNode != null) {
             var oldText = current.memoizedProps; // If we have an alternate, that means this is an update and we need
             // to schedule a side-effect to do the updates.
-
+            console.log(`%c=completeWork->更新流程HostText调用updateHostText`, 'color:chartreuse')
             updateHostText(current, workInProgress, oldText, newText);
           } else {
             if (typeof newText !== 'string') {
@@ -19492,6 +19493,7 @@
                 markUpdate(workInProgress);
               }
             } else {
+              console.log(`%c=completeWork->初始化流程HostText调用createTextInstance`, 'color:chartreuse')
               workInProgress.stateNode = createTextInstance(newText, _rootContainerInstance, _currentHostContext, workInProgress);
             }
           }
@@ -22373,24 +22375,24 @@
         }
     }
 
+    console.log('%c=beginWork()调用bailoutOnAlreadyFinishedWork()直接复用一个节点', 'color:yellow');
     return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
   }
 
   function beginWork(current, workInProgress, renderLanes) {
     {
       if (workInProgress._debugNeedsRemount && current !== null) {
-        console.log('%c=beginWork()===end 0', 'color:magenta')
+        console.log('%c=beginWork()===end->结束', 'color:magenta')
         // This will restart the begin phase with a new fiber.
         console.log('%c=beginWork()调用 createFiberFromTypeAndProps(workInProgress.type, workInProgress,...)', 'color:yellow');
         return remountFiber(current, workInProgress, createFiberFromTypeAndProps(workInProgress.type, workInProgress.key, workInProgress.pendingProps, workInProgress._debugOwner || null, workInProgress.mode, workInProgress.lanes));
       }
     }
 
-    console.log('%c=beginWork()===start1', 'color:magenta', { getFiberName: getFiberName(workInProgress), current, renderLanes, workInProgress })
-
     // update时：如果current存在可能存在优化路径，可以复用current（即上一次更新的Fiber节点）
     if (current !== null) {
-      console.log('%c=beginWork()===update', 'color:magenta')
+      console.log('%c=beginWork()===start1-更新', 'color:magenta', { getFiberName: getFiberName(workInProgress), current, renderLanes, workInProgress })
+
       // 通过一系列判断逻辑判断当前节点是否可复用，用didReceiveUpdate来标记，
       // 若可复用则走attemptEarlyBailoutIfNoScheduledUpdate。
       var oldProps = current.memoizedProps;
@@ -22453,7 +22455,7 @@
 
 
     workInProgress.lanes = NoLanes;
-
+    console.log('%c=beginWork()===start1-初始化', 'color:magenta', { getFiberName: getFiberName(workInProgress), current, renderLanes, workInProgress })
     switch (workInProgress.tag) {
       case IndeterminateComponent:
         {
