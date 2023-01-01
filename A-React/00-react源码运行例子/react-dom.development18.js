@@ -22379,18 +22379,18 @@
   function beginWork(current, workInProgress, renderLanes) {
     {
       if (workInProgress._debugNeedsRemount && current !== null) {
-        console.log('%c=beginWork===end 0', 'color:magenta')
+        console.log('%c=beginWork()===end 0', 'color:magenta')
         // This will restart the begin phase with a new fiber.
-        console.log('%c=beginWork调用 createFiberFromTypeAndProps(workInProgress.type, workInProgress,...)', 'color:yellow');
+        console.log('%c=beginWork()调用 createFiberFromTypeAndProps(workInProgress.type, workInProgress,...)', 'color:yellow');
         return remountFiber(current, workInProgress, createFiberFromTypeAndProps(workInProgress.type, workInProgress.key, workInProgress.pendingProps, workInProgress._debugOwner || null, workInProgress.mode, workInProgress.lanes));
       }
     }
 
-    console.log('%c=开始beginWork===start1', 'color:magenta', { getFiberName: getFiberName(workInProgress), current, renderLanes, workInProgress })
+    console.log('%c=beginWork()===start1', 'color:magenta', { getFiberName: getFiberName(workInProgress), current, renderLanes, workInProgress })
 
     // update时：如果current存在可能存在优化路径，可以复用current（即上一次更新的Fiber节点）
     if (current !== null) {
-      console.log('%c=开始beginWork===update', 'color:magenta')
+      console.log('%c=beginWork()===update', 'color:magenta')
       // 通过一系列判断逻辑判断当前节点是否可复用，用didReceiveUpdate来标记，
       // 若可复用则走attemptEarlyBailoutIfNoScheduledUpdate。
       var oldProps = current.memoizedProps;
@@ -22411,7 +22411,7 @@
           (workInProgress.flags & DidCapture) === NoFlags) {
           // No pending updates or context. Bail out now.
           didReceiveUpdate = false;
-          console.log('%c=beginWork===end 1', 'color:magenta')
+          console.log('%c=beginWork()end 1', 'color:magenta')
           // bailoutOnAlreadyFinishedWork=> cloneChildFibers 顾名思义，会直接克隆一个fiber节点并返回。
           return attemptEarlyBailoutIfNoScheduledUpdate(current, workInProgress, renderLanes);
         }
@@ -22457,14 +22457,14 @@
     switch (workInProgress.tag) {
       case IndeterminateComponent:
         {
-          console.log('%c=beginWork===end 2 mountIndeterminateComponent', 'color:magenta')
+          console.log('%c=beginWork()==end 2 mountIndeterminateComponent', 'color:magenta')
           return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
         }
 
       case LazyComponent:
         {
           var elementType = workInProgress.elementType;
-          console.log('%c=beginWork===end 3 mountLazyComponent', 'color:magenta')
+          console.log('%c=beginWork()=end 3 mountLazyComponent', 'color:magenta')
           return mountLazyComponent(current, workInProgress, elementType, renderLanes);
         }
 
@@ -22473,7 +22473,7 @@
           var Component = workInProgress.type;
           var unresolvedProps = workInProgress.pendingProps;
           var resolvedProps = workInProgress.elementType === Component ? unresolvedProps : resolveDefaultProps(Component, unresolvedProps);
-          console.log('%c=beginWork===end 4 updateFunctionComponent', 'color:magenta')
+          console.log('%c=beginWork()=end 4 updateFunctionComponent', 'color:magenta')
           return updateFunctionComponent(current, workInProgress, Component, resolvedProps, renderLanes);
         }
 
@@ -22483,28 +22483,28 @@
           var _unresolvedProps = workInProgress.pendingProps;
 
           var _resolvedProps = workInProgress.elementType === _Component ? _unresolvedProps : resolveDefaultProps(_Component, _unresolvedProps);
-          console.log('%c=beginWork===end 5 updateClassComponent', 'color:magenta')
+          console.log('%c=beginWork()=end 5 updateClassComponent', 'color:magenta')
           return updateClassComponent(current, workInProgress, _Component, _resolvedProps, renderLanes);
         }
 
       case HostRoot:
-        console.log('%c=beginWork===end 6 updateHostRoot', 'color:magenta')
+        console.log('%c=beginWork()=end 6 updateHostRoot', 'color:magenta')
         return updateHostRoot(current, workInProgress, renderLanes);
 
       case HostComponent:
-        console.log(`%c=beginWork===end 7 updateHostComponent$1,即原生 DOM 组件对应的 Fiber节点:`, 'color:magenta', { type: workInProgress.type })
+        console.log(`%c=beginWork()=end 7 updateHostComponent$1,即原生 DOM 组件对应的 Fiber节点:`, 'color:magenta', { type: workInProgress.type })
         return updateHostComponent$1(current, workInProgress, renderLanes);
 
       case HostText:
-        console.log('%c=beginWork===end 8 updateHostText$1', 'color:magenta')
+        console.log('%c=beginWork()=end 8 updateHostText$1', 'color:magenta')
         return updateHostText$1(current, workInProgress);
 
       case SuspenseComponent:
-        console.log('%c=beginWork===end 9 updateSuspenseComponent', 'color:magenta')
+        console.log('%c=beginWork()=end 9 updateSuspenseComponent', 'color:magenta')
         return updateSuspenseComponent(current, workInProgress, renderLanes);
 
       case HostPortal:
-        console.log('%c=beginWork===end 10 updatePortalComponent', 'color:magenta')
+        console.log('%c=beginWork()=end 10 updatePortalComponent', 'color:magenta')
         return updatePortalComponent(current, workInProgress, renderLanes);
 
       case ForwardRef:
@@ -22514,28 +22514,28 @@
 
           var _resolvedProps2 = workInProgress.elementType === type ? _unresolvedProps2 : resolveDefaultProps(type, _unresolvedProps2);
 
-          console.log('%c=beginWork===end 11 updateForwardRef', 'color:magenta')
+          console.log('%c=beginWork()=end 11 updateForwardRef', 'color:magenta')
           return updateForwardRef(current, workInProgress, type, _resolvedProps2, renderLanes);
         }
 
       case Fragment:
-        console.log('%c=beginWork===end 12 updateFragment', 'color:magenta')
+        console.log('%c=beginWork()=end 12 updateFragment', 'color:magenta')
         return updateFragment(current, workInProgress, renderLanes);
 
       case Mode:
-        console.log('%c=beginWork===end 13 updateMode', 'color:magenta')
+        console.log('%c=beginWork()=end 13 updateMode', 'color:magenta')
         return updateMode(current, workInProgress, renderLanes);
 
       case Profiler:
-        console.log('%c=beginWork===end 14 updateProfiler', 'color:magenta')
+        console.log('%c=beginWork()=end 14 updateProfiler', 'color:magenta')
         return updateProfiler(current, workInProgress, renderLanes);
 
       case ContextProvider:
-        console.log('%c=beginWork===end 15 updateContextProvider', 'color:magenta')
+        console.log('%c=beginWork()=end 15 updateContextProvider', 'color:magenta')
         return updateContextProvider(current, workInProgress, renderLanes);
 
       case ContextConsumer:
-        console.log('%c=beginWork===end 16 updateContextConsumer', 'color:magenta')
+        console.log('%c=beginWork()=end 16 updateContextConsumer', 'color:magenta')
         return updateContextConsumer(current, workInProgress, renderLanes);
 
       case MemoComponent:
@@ -22557,13 +22557,13 @@
           }
 
           _resolvedProps3 = resolveDefaultProps(_type2.type, _resolvedProps3);
-          console.log('%c=beginWork===end 17 updateMemoComponent', 'color:magenta')
+          console.log('%c=beginWork()=end 17 updateMemoComponent', 'color:magenta')
           return updateMemoComponent(current, workInProgress, _type2, _resolvedProps3, renderLanes);
         }
 
       case SimpleMemoComponent:
         {
-          console.log('%c=beginWork===end 18 updateSimpleMemoComponent', 'color:magenta')
+          console.log('%c=beginWork()=end 18 updateSimpleMemoComponent', 'color:magenta')
           return updateSimpleMemoComponent(current, workInProgress, workInProgress.type, workInProgress.pendingProps, renderLanes);
         }
 
@@ -22573,13 +22573,13 @@
           var _unresolvedProps4 = workInProgress.pendingProps;
 
           var _resolvedProps4 = workInProgress.elementType === _Component2 ? _unresolvedProps4 : resolveDefaultProps(_Component2, _unresolvedProps4);
-          console.log('%c=beginWork===end 19 mountIncompleteClassComponent', 'color:magenta')
+          console.log('%c=beginWork()=end 19 mountIncompleteClassComponent', 'color:magenta')
           return mountIncompleteClassComponent(current, workInProgress, _Component2, _resolvedProps4, renderLanes);
         }
 
       case SuspenseListComponent:
         {
-          console.log('%c=beginWork===end 20 updateSuspenseListComponent', 'color:magenta')
+          console.log('%c=beginWork()=end 20 updateSuspenseListComponent', 'color:magenta')
           return updateSuspenseListComponent(current, workInProgress, renderLanes);
         }
 
@@ -22591,7 +22591,7 @@
 
       case OffscreenComponent:
         {
-          console.log('%c=beginWork===end 21 updateOffscreenComponent', 'color:magenta')
+          console.log('%c=beginWork()=end 21 updateOffscreenComponent', 'color:magenta')
           return updateOffscreenComponent(current, workInProgress, renderLanes);
         }
     }
@@ -28223,14 +28223,14 @@
 
   function createWorkInProgress(current, pendingProps) {
     var workInProgress = current.alternate;
-
+    // 区分是在mount时还是在update时
     if (workInProgress === null) {
       // We use a double buffering pooling technique because we know that we'll
       // only ever need at most two versions of a tree. We pool the "other" unused
       // node that we're free to reuse. This is lazily created to avoid allocating
       // extra objects for things that are never updated. It also allow us to
       // reclaim the extra memory if needed.
-      console.log('==createWorkInProgress-->')
+      console.log('==createWorkInProgress-->,没有就创建一个')
       workInProgress = createFiber(current.tag, pendingProps, current.key, current.mode);
       workInProgress.elementType = current.elementType;
       workInProgress.type = current.type;
@@ -28242,10 +28242,11 @@
         workInProgress._debugOwner = current._debugOwner;
         workInProgress._debugHookTypes = current._debugHookTypes;
       }
-
+      console.log('==createWorkInProgress-->,workInProgress.alternate指定为current')
       workInProgress.alternate = current;
       current.alternate = workInProgress;
     } else {
+      // 复用属性
       workInProgress.pendingProps = pendingProps; // Needed because Blocks store data on type.
 
       workInProgress.type = current.type; // We already have an alternate.
@@ -28269,6 +28270,7 @@
 
 
     workInProgress.flags = current.flags & StaticMask;
+    // 复用属性
     workInProgress.childLanes = current.childLanes;
     workInProgress.lanes = current.lanes;
     workInProgress.child = current.child;
