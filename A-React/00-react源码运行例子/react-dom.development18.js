@@ -26817,7 +26817,11 @@
       throw new Error('Should not already be working.');
     }
 
+    // root 指 fiberRootNode
+    // root.finishedWork 指当前应用的 rootFiber
     var finishedWork = root.finishedWork;
+
+    // 凡是变量名带 lane 的都是优先级相关
     var lanes = root.finishedLanes;
 
     {
@@ -26853,6 +26857,7 @@
     // pending time is whatever is left on the root fiber.
 
     var remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
+    // 重置优先级相关变量
     markRootFinished(root, remainingLanes);
 
     if (root === workInProgressRoot) {
