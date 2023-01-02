@@ -44,6 +44,34 @@ subgraph layout[layout阶段]
   5B--执行useEffect的create函数-->5C2(commitPassiveMountEffects)
 end
 ```
+
+## 执行useLayoutEffect流程图
+```mermaid
+flowchart TD
+A0("commitRootImpl(root,recoverableErrors,transitions,renderPriorityLevel)")--阶段3开始-->A3
+
+A3("commitLayoutEffects(finishedWork, root, lanes)")-->c1(commitLayoutEffects_begin)--循环nextEffect-->c2("commitLayoutMountEffects_complete(subtreeRoot, root, committedLanes)")--循环nextEffect-->c3(commitLayoutEffectOnFiber代码很长)
+
+c3--case为SimpleMemoComponent-->c4(commitHookEffectListMount执行useLayoutEffect的回调函数)--执行useLayoutEffect-->c5("effect.destroy = create()")
+```
+
+## useEffect 流程图
+```mermaid
+flowchart TD
+A1(useEffect)--初始化-->A2("mountEffect(create,deps)")-->A3("mountEffect(create,deps)")
+
+B1("commitRootImpl(root,recoverableErrors,..)")-->B2("scheduleCallback$")--回调调用-->b1("flushPassiveEffects()")-->b2("return flushPassiveEffectsImpl()")
+
+b2-->b3("flushPassiveEffectsImpl()")-->b4("commitPassiveMountEffects(root,root.current,lanes,transitions)")
+
+b4-->b5("commitPassiveMountEffects_begin(finishedWork,root,committedLanes,committedTransitions)")-->b6("commitPassiveMountEffects_complete(subtreeRoot,root, committedLanes,committedTransitions)")
+
+b6-->b7("commitPassiveMountOnFiber(root,fiber,committedLanes,committedTransitions)")
+
+b7-->b8("commitHookEffectListMount执行useLayoutEffect的回调函数")--执行useLayoutEffect-->c5("effect.destroy = create()")
+```
+
+
 # 一. commit 阶段:简单来说，就是将DOM渲染到页面上
 1. before mutation阶段-执行DOM操作前,这个阶段 DOM 节点还没有被渲染到界面上去，过程中会触发 getSnapshotBeforeUpdate，也会处理 useEffect 钩子相关的调度逻辑。
 

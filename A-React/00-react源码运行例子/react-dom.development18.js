@@ -16907,20 +16907,23 @@
     if (componentUpdateQueue === null) {
       componentUpdateQueue = createFunctionComponentUpdateQueue();
       currentlyRenderingFiber$1.updateQueue = componentUpdateQueue;
+      console.log('%c=副作用:pushEffect-effect.next = effect形成环形链表1', 'color:chartreuse')
       componentUpdateQueue.lastEffect = effect.next = effect;
     } else {
       var lastEffect = componentUpdateQueue.lastEffect;
 
       if (lastEffect === null) {
+        console.log('%c=副作用:pushEffect-effect.next = effect形成环形链表2', 'color:chartreuse')
         componentUpdateQueue.lastEffect = effect.next = effect;
       } else {
+        console.log('%c=副作用:pushEffect-effect.next = effect形成环形链表3', 'color:chartreuse')
         var firstEffect = lastEffect.next;
         lastEffect.next = effect;
         effect.next = firstEffect;
         componentUpdateQueue.lastEffect = effect;
       }
     }
-
+    console.log('=副作用:pushEffect-返回值', { effect })
     return effect;
   }
 
@@ -16942,13 +16945,18 @@
   }
 
   function mountEffectImpl(fiberFlags, hookFlags, create, deps) {
+    console.log('=副作用:mountEffectImpl-hook初始化', { fiberFlags, hookFlags, create, deps })
     var hook = mountWorkInProgressHook();
+    console.log('=副作用:mountEffectImpl-判断是否有传入deps，如果有会作为下次更新的deps')
     var nextDeps = deps === undefined ? null : deps;
+    console.log('=副作用:mountEffectImpl-给hook所在的fiber打上有副作用的更新的标记')
     currentlyRenderingFiber$1.flags |= fiberFlags;
+    console.log('=副作用:mountEffectImpl调用pushEffect-将副作用操作存放到fiber.memoizedState.hook.memoizedState中')
     hook.memoizedState = pushEffect(HasEffect | hookFlags, create, undefined, nextDeps);
   }
 
   function updateEffectImpl(fiberFlags, hookFlags, create, deps) {
+    console.log('=副作用:updateEffectImpl')
     var hook = updateWorkInProgressHook();
     var nextDeps = deps === undefined ? null : deps;
     var destroy = undefined;
@@ -16973,8 +16981,10 @@
 
   function mountEffect(create, deps) {
     if ((currentlyRenderingFiber$1.mode & StrictEffectsMode) !== NoMode) {
+      console.log('-useEffect=初始化调用mountEffect 1')
       return mountEffectImpl(MountPassiveDev | Passive | PassiveStatic, Passive$1, create, deps);
     } else {
+      console.log('-useEffect=初始化调用mountEffect 2')
       return mountEffectImpl(Passive | PassiveStatic, Passive$1, create, deps);
     }
   }
@@ -17552,6 +17562,7 @@
         currentHookNameInDev = 'useEffect';
         mountHookTypesDev();
         checkDepsAreArrayDev(deps);
+        console.log('-useEffect=初始化调用mountEffect', { create, deps })
         return mountEffect(create, deps);
       },
       useImperativeHandle: function (ref, create, deps) {
@@ -22901,9 +22912,7 @@
   var shouldFireAfterActiveInstanceBlur = false;
   function commitBeforeMutationEffects(root, firstChild) {
 
-    console.log('分割线commitBeforeMutationEffects=======>start')
-    console.log('commitBeforeMutationEffects:', { root, firstChild })
-    console.log('分割线commitBeforeMutationEffects=======>end')
+    console.log('-副作用,commit第1阶段,主要处理执行DOM操作前的一些相关操作，commitBeforeMutationEffects参数', { root, firstChild })
 
     focusedInstanceHandle = prepareForCommit(root.containerInfo);
 
@@ -23099,6 +23108,7 @@
       var firstEffect = lastEffect.next;
       var effect = firstEffect;
 
+      console.log('%ccommitHookEffectListMount开始循环effect !== firstEffect', 'color:red')
       do {
         if ((effect.tag & flags) === flags) {
           {
@@ -23117,7 +23127,7 @@
               setIsRunningInsertionEffect(true);
             }
           }
-
+          console.log('commitHookEffectListMount执行Effect:', { create })
           effect.destroy = create();
 
           {
@@ -23238,11 +23248,13 @@
                 try {
                   startLayoutEffectTimer();
                   // 执行useLayoutEffect的回调
+                  console.log('commitLayoutEffectOnFiber-case等于SimpleMemoComponent为例：调用commitHookEffectListMount 1,执行useLayoutEffect的回调')
                   commitHookEffectListMount(Layout | HasEffect, finishedWork);
                 } finally {
                   recordLayoutEffectDuration(finishedWork);
                 }
               } else {
+                console.log('%commitLayoutEffectOnFiber-case等于SimpleMemoComponent为例:%c调用commitHookEffectListMount 2,执行useLayoutEffect', 'color:white', 'color:red')
                 commitHookEffectListMount(Layout | HasEffect, finishedWork);
               }
             }
@@ -23361,7 +23373,7 @@
                     break;
                 }
               }
-
+              console.log('commitLayoutEffectOnFiber-case等于HostRoot为例：调用commitUpdateQueue')
               commitUpdateQueue(finishedWork, _updateQueue, _instance);
             }
 
@@ -23378,6 +23390,7 @@
             if (current === null && finishedWork.flags & Update) {
               var type = finishedWork.type;
               var props = finishedWork.memoizedProps;
+              console.log('commitLayoutEffectOnFiber-case等于HostComponent为例：调用commitMount')
               commitMount(_instance2, type, props);
             }
 
@@ -23473,6 +23486,7 @@
     if (!offscreenSubtreeWasHidden) {
       {
         if (finishedWork.flags & Ref) {
+          console.log('commitLayoutEffectOnFiber-最后调用commitAttachRef')
           commitAttachRef(finishedWork);
         }
       }
@@ -24210,6 +24224,7 @@
     }
   } // This function detects when a Suspense boundary goes from visible to hidden.
   function commitMutationEffects(root, finishedWork, committedLanes) {
+    console.log('-副作用,commit第2阶段,执行DOM操作参数', { root, finishedWork, committedLanes })
     inProgressLanes = committedLanes;
     inProgressRoot = root;
     setCurrentFiber(finishedWork);
@@ -24575,6 +24590,7 @@
     inProgressLanes = committedLanes;
     inProgressRoot = root;
     nextEffect = finishedWork;
+    console.log('-副作用,commit第3阶段,处理执行DOM操作后的操作,并调用commitLayoutEffects_begin参数', { finishedWork, root, committedLanes })
     commitLayoutEffects_begin(finishedWork, root, committedLanes);
     inProgressLanes = null;
     inProgressRoot = null;
@@ -24583,7 +24599,7 @@
   function commitLayoutEffects_begin(subtreeRoot, root, committedLanes) {
     // Suspense layout effects semantics don't change for legacy roots.
     var isModernRoot = (subtreeRoot.mode & ConcurrentMode) !== NoMode;
-
+    console.log('-副作用,commit第3阶段,commitLayoutEffects_begin,从上往下遍历effectList，最终会执行 commitLayoutMountEffects_complete', { nextEffect })
     while (nextEffect !== null) {
       var fiber = nextEffect;
       var firstChild = fiber.child;
@@ -24595,6 +24611,7 @@
 
         if (newOffscreenSubtreeIsHidden) {
           // The Offscreen tree is hidden. Skip over its layout effects.
+          console.log('commitLayoutEffects_begin循环1commitLayoutMountEffects_complete',)
           commitLayoutMountEffects_complete(subtreeRoot, root, committedLanes);
           continue;
         } else {
@@ -24619,6 +24636,7 @@
 
           while (child !== null) {
             nextEffect = child;
+            console.log('commitLayoutEffects_begin循环2commitLayoutEffects_begin', { child })
             commitLayoutEffects_begin(child, // New root; bubble back up to here and stop.
               root, committedLanes);
             child = child.sibling;
@@ -24628,6 +24646,7 @@
           nextEffect = fiber;
           offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden;
           offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden;
+          console.log('commitLayoutEffects_begin循环3commitLayoutMountEffects_complete',)
           commitLayoutMountEffects_complete(subtreeRoot, root, committedLanes);
           continue;
         }
@@ -24637,6 +24656,7 @@
         firstChild.return = fiber;
         nextEffect = firstChild;
       } else {
+        console.log('commitLayoutEffects_begin循环4commitLayoutMountEffects_complete',)
         commitLayoutMountEffects_complete(subtreeRoot, root, committedLanes);
       }
     }
@@ -24651,6 +24671,7 @@
         setCurrentFiber(fiber);
 
         try {
+          console.log('commitLayoutMountEffects_complete循环nextEffect调用:commitLayoutEffectOnFiber')
           commitLayoutEffectOnFiber(root, current, fiber, committedLanes);
         } catch (error) {
           captureCommitPhaseError(fiber, fiber.return, error);
@@ -24829,6 +24850,7 @@
 
   function commitPassiveMountEffects(root, finishedWork, committedLanes, committedTransitions) {
     nextEffect = finishedWork;
+    console.log(`%c=副作用:commitPassiveMountEffects调用commitPassiveMountEffects_begin`, 'color:yellow')
     commitPassiveMountEffects_begin(finishedWork, root, committedLanes, committedTransitions);
   }
 
@@ -24841,6 +24863,7 @@
         firstChild.return = fiber;
         nextEffect = firstChild;
       } else {
+        console.log(`%c=副作用:commitPassiveMountEffects_begin调用commitPassiveMountEffects_complete`, 'color:yellow')
         commitPassiveMountEffects_complete(subtreeRoot, root, committedLanes, committedTransitions);
       }
     }
@@ -24854,6 +24877,7 @@
         setCurrentFiber(fiber);
 
         try {
+          console.log(`%c=副作用:commitPassiveMountEffects_complete调用commitPassiveMountOnFiber`, 'color:yellow')
           commitPassiveMountOnFiber(root, fiber, committedLanes, committedTransitions);
         } catch (error) {
           captureCommitPhaseError(fiber, fiber.return, error);
@@ -24889,11 +24913,13 @@
             startPassiveEffectTimer();
 
             try {
+              console.log(`%c=副作用:commitPassiveMountOnFiber case为SimpleMemoComponent','color:yellow','%c调用commitHookEffectListMount 1,执行useEffect`, 'color:red')
               commitHookEffectListMount(Passive$1 | HasEffect, finishedWork);
             } finally {
               recordPassiveEffectDuration(finishedWork);
             }
           } else {
+            console.log('%c=副作用:commitPassiveMountOnFiber case为SimpleMemoComponent%c调用commitHookEffectListMount 2,执行useEffect', 'color:white', 'color:red')
             commitHookEffectListMount(Passive$1 | HasEffect, finishedWork);
           }
 
@@ -25716,7 +25742,7 @@
           break;
       }
       // console.log('更新流程-->0-c2: performConcurrentWorkOnRoot')
-      console.log('%c=render阶段准备:', 'color:red', 'ensureRootIsScheduled()调用performConcurrentWorkOnRoot()--同步更新:concurrent模式==')
+      console.log('%c=render阶段准备:', 'color:red', 'ensureRootIsScheduled()调用performConcurrentWorkOnRoot--同步更新:concurrent模式==')
       newCallbackNode = scheduleCallback$1(schedulerPriorityLevel, performConcurrentWorkOnRoot.bind(null, root));
     }
 
@@ -25731,6 +25757,8 @@
       resetNestedUpdateFlag();
     } // Since we know we're in a React event, we can clear the current
     // event time. The next update will compute a new event time.
+
+    console.log('%c==render阶段准备:重点函数performConcurrentWorkOnRoot,%c这个函数在render结束会开启commit阶段', 'color:red', 'color:cyan');
 
     currentEventTime = NoTimestamp;
     currentEventTransitionLane = NoLanes;
@@ -25771,7 +25799,7 @@
 
 
     var shouldTimeSlice = !includesBlockingLane(root, lanes) && !includesExpiredLane(root, lanes) && (!didTimeout);
-    console.log('==render阶段准备:performConcurrentWorkOnRoot()调用renderRootSync():同步更新concurrent模式:', { shouldTimeSlice });
+    console.log('==render阶段准备:performConcurrentWorkOnRoot调用renderRootSync():同步更新concurrent模式:', { shouldTimeSlice });
     var exitStatus = shouldTimeSlice ? renderRootConcurrent(root, lanes) : renderRootSync(root, lanes);
 
     if (exitStatus !== RootInProgress) {
@@ -25843,6 +25871,7 @@
 
         root.finishedWork = finishedWork;
         root.finishedLanes = lanes;
+        console.log(`%c=commit阶段=前=render阶段结束=performConcurrentWorkOnRoot调用finishConcurrentRender-->commitRoot`, 'color:cyan')
         finishConcurrentRender(root, exitStatus, lanes);
       }
     }
@@ -25926,6 +25955,7 @@
         {
           // We should have already attempted to retry this tree. If we reached
           // this point, it errored again. Commit it.
+          console.log(`%c=commit阶段=调用commitRoot 5`, 'color:cyan')
           commitRoot(root, workInProgressRootRecoverableErrors, workInProgressTransitions);
           break;
         }
@@ -25969,7 +25999,7 @@
             }
           } // The work expired. Commit immediately.
 
-
+          console.log(`%c=commit阶段=调用commitRoot 1`, 'color:cyan')
           commitRoot(root, workInProgressRootRecoverableErrors, workInProgressTransitions);
           break;
         }
@@ -26007,7 +26037,7 @@
             }
           } // Commit the placeholder.
 
-
+          console.log(`%c=commit阶段=调用commitRoot 2`, 'color:cyan')
           commitRoot(root, workInProgressRootRecoverableErrors, workInProgressTransitions);
           break;
         }
@@ -26015,6 +26045,7 @@
       case RootCompleted:
         {
           // The work completed. Ready to commit.
+          console.log(`%c=commit阶段=调用commitRoot 3:finishConcurrentRender函数case RootCompleted,`, 'color:cyan')
           commitRoot(root, workInProgressRootRecoverableErrors, workInProgressTransitions);
           break;
         }
@@ -26109,7 +26140,7 @@
     if ((executionContext & (RenderContext | CommitContext)) !== NoContext) {
       throw new Error('Should not already be working.');
     }
-
+    console.log(`%c=副作用:performSyncWorkOnRoot调用flushPassiveEffects-7`, 'color:yellow')
     flushPassiveEffects();
     var lanes = getNextLanes(root, NoLanes);
 
@@ -26151,6 +26182,7 @@
     var finishedWork = root.current.alternate;
     root.finishedWork = finishedWork;
     root.finishedLanes = lanes;
+    console.log(`%c=commit阶段=调用commitRoot 4:performSyncWorkOnRoot调用commitRoot`, 'color:cyan')
     commitRoot(root, workInProgressRootRecoverableErrors, workInProgressTransitions); // Before exiting, make sure there's a callback scheduled for the next
     // pending level.
 
@@ -26210,6 +26242,7 @@
     // In legacy mode, we flush pending passive effects at the beginning of the
     // next event, not at the end of the previous one.
     if (rootWithPendingPassiveEffects !== null && rootWithPendingPassiveEffects.tag === LegacyRoot && (executionContext & (RenderContext | CommitContext)) === NoContext) {
+      console.log(`%c=副作用:flushSync调用flushPassiveEffects-8`, 'color:yellow')
       flushPassiveEffects();
     }
 
@@ -26753,7 +26786,7 @@
     // layout phases. Should be able to remove.
     var previousUpdateLanePriority = getCurrentUpdatePriority();
     var prevTransition = ReactCurrentBatchConfig$3.transition;
-    console.log('%c=commitRoot===: %c=入口', 'color:red', 'color:blue', { root, recoverableErrors });
+    console.log(`%c=commit阶段=0=commit阶段开始`, 'color:cyan', { root, recoverableErrors })
     try {
       ReactCurrentBatchConfig$3.transition = null;
       setCurrentUpdatePriority(DiscreteEventPriority);
@@ -26774,6 +26807,7 @@
       // no more pending effects.
       // TODO: Might be better if `flushPassiveEffects` did not automatically
       // flush synchronous work at the end, to avoid factoring hazards like this.
+      console.log(`%c=副作用:commitRootImpl循环调用flushPassiveEffects-1-条件:rootWithPendingPassiveEffects !== null`, 'color:yellow', { rootWithPendingPassiveEffects })
       flushPassiveEffects();
     } while (rootWithPendingPassiveEffects !== null);
 
@@ -26832,7 +26866,7 @@
     // TODO: Delete all other places that schedule the passive effect callback
     // They're redundant.
 
-
+    console.log(`%c=副作用:commitRootImpl务，如果是useEffect的effect任务，会调用flusnPassiveEffects`, 'color:yellow', (finishedWork.subtreeFlags & PassiveMask) !== NoFlags || (finishedWork.flags & PassiveMask) !== NoFlags)
     if ((finishedWork.subtreeFlags & PassiveMask) !== NoFlags || (finishedWork.flags & PassiveMask) !== NoFlags) {
       if (!rootDoesHavePassiveEffects) {
         rootDoesHavePassiveEffects = true;
@@ -26844,6 +26878,7 @@
 
         pendingPassiveTransitions = transitions;
         scheduleCallback$1(NormalPriority, function () {
+          console.log(`%c=副作用:commitRootImpl调用flushPassiveEffects-2`, 'color:yellow')
           flushPassiveEffects(); // This render triggered passive effects: release the root cache pool
           // *after* passive effects fire to avoid freeing a cache pool that may
           // be referenced by a node in the tree (HostRoot, Cache boundary etc)
@@ -26876,6 +26911,7 @@
       // state of the host tree right before we mutate it. This is where
       // getSnapshotBeforeUpdate is called.
 
+      console.log(`%c=commit阶段=1commitBeforeMutationEffects阶段:执行DOM操作前`, 'color:cyan', { root, finishedWork })
       var shouldFireAfterActiveInstanceBlur = commitBeforeMutationEffects(root, finishedWork);
 
       {
@@ -26884,7 +26920,7 @@
         recordCommitTime();
       }
 
-
+      console.log(`%c=commit阶段=2commitMutationEffects阶段:执行DOM操作`, 'color:cyan')
       commitMutationEffects(root, finishedWork, lanes);
 
       resetAfterCommit(root.containerInfo); // The work-in-progress tree is now the current tree. This must come after
@@ -26898,6 +26934,7 @@
         markLayoutEffectsStarted(lanes);
       }
 
+      console.log(`%c=commit阶段=3commitLayoutEffects阶段:执行DOM操作后的一些相关操作`, 'color:cyan')
       commitLayoutEffects(finishedWork, root, lanes);
 
       {
@@ -27005,6 +27042,7 @@
 
 
     if (includesSomeLane(pendingPassiveEffectsLanes, SyncLane) && root.tag !== LegacyRoot) {
+      console.log(`%c=副作用:commitRootImpl循环调用flushPassiveEffects-3`, 'color:yellow')
       flushPassiveEffects();
     } // Read this again, since a passive effect might have updated it
 
@@ -27045,6 +27083,7 @@
     // in the first place because we used to wrap it with
     // `Scheduler.runWithPriority`, which accepts a function. But now we track the
     // priority within React itself, so we can mutate the variable directly.
+    console.log(`%c=副作用:flushPassiveEffects return bool`, 'color:yellow', { rootWithPendingPassiveEffects: rootWithPendingPassiveEffects !== null })
     if (rootWithPendingPassiveEffects !== null) {
       var renderPriority = lanesToEventPriority(pendingPassiveEffectsLanes);
       var priority = lowerEventPriority(DefaultEventPriority, renderPriority);
@@ -27054,6 +27093,7 @@
       try {
         ReactCurrentBatchConfig$3.transition = null;
         setCurrentUpdatePriority(priority);
+        console.log(`%c=副作用:flushPassiveEffects 调用return flushPassiveEffectsImpl()`, 'color:yellow')
         return flushPassiveEffectsImpl();
       } finally {
         setCurrentUpdatePriority(previousPriority);
@@ -27070,6 +27110,7 @@
       if (!rootDoesHavePassiveEffects) {
         rootDoesHavePassiveEffects = true;
         scheduleCallback$1(NormalPriority, function () {
+          console.log(`%c=副作用:enqueuePendingPassiveProfilerEffect调用flushPassiveEffects-4`, 'color:yellow')
           flushPassiveEffects();
           return null;
         });
@@ -27108,9 +27149,9 @@
 
     var prevExecutionContext = executionContext;
     executionContext |= CommitContext;
-    // 执行useEffect的销毁函数
+    console.log(`%c=副作用:flushPassiveEffectsImpl调用commitPassiveUnmountEffects(root.current)-执行useEffect的销毁函数`, 'color:yellow')
     commitPassiveUnmountEffects(root.current);
-    // 执行useEffect的create函数
+    console.log(`%c=副作用:flushPassiveEffectsImpl调用commitPassiveUnmountEffects(root.current)-执行useEffect的create函数`, 'color:yellow')
     commitPassiveMountEffects(root, root.current, lanes, transitions); // TODO: Move to commitPassiveMountEffects
 
     {
@@ -27872,6 +27913,7 @@
 
       var staleFamilies = update.staleFamilies,
         updatedFamilies = update.updatedFamilies;
+      console.log(`%c=副作用:scheduleRefresh调用flushPassiveEffects-5`, 'color:yellow')
       flushPassiveEffects();
       flushSync(function () {
         scheduleFibersWithFamiliesRecursively(root.current, updatedFamilies, staleFamilies);
@@ -27886,7 +27928,7 @@
         // Just ignore. We'll delete this with _renderSubtree code path later.
         return;
       }
-
+      console.log(`%c=副作用:flushPassiveEffects调用flushPassiveEffects-6`, 'color:yellow')
       flushPassiveEffects();
       flushSync(function () {
         console.log('update-Container 5');

@@ -34,6 +34,14 @@
         setShowDiv(!showDiv)
       }
 
+      React.useEffect(() => {
+        console.log('=副作用-useEffect-->运行');
+      }, [])
+
+      React.useLayoutEffect(() => {
+        console.log('=副作用-useLayoutEffect-->运行');
+      }, [])
+
       return (
         <div id='div1' className='c1'>
           <button onClick={onClickText} className="btn">Hello world,Click me</button>
