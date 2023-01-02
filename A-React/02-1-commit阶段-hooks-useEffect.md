@@ -275,7 +275,6 @@ commit阶段的工作主要分为三部分：
 ```
 before mutation阶段-执行DOM操作前,这个阶段 DOM 节点还没有被渲染到界面上去，过程中会触发 getSnapshotBeforeUpdate，也会处理 useEffect 钩子相关的调度逻辑。
 
-
 1. 处理 DOM 节点渲染/删除后的 autoFocus、blur 逻辑；
 2. 调用getSnapshotBeforeUpdate 生命周期钩子；
 3. 调度useEffect。

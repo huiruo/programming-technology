@@ -16153,6 +16153,9 @@
 
   function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
     renderLanes = nextRenderLanes;
+    // 1. 将workInProgress 赋值给全局变量 currentlyRenderingFiber
+    // 这样在调用 Hook 时就能知道对应的 fiber 是谁
+    console.log(`%c=探究初始和hook=renderWithHooks挂载将workInProgress 赋值给全局变量 currentlyRenderingFiber,这样在调用 Hook 时就能知道对应的 fiber 是谁`, 'color:blueviolet')
     currentlyRenderingFiber$1 = workInProgress;
 
     {
@@ -16176,9 +16179,11 @@
     // Non-stateful hooks (e.g. context) don't get added to memoizedState,
     // so memoizedState would be null during updates and mounts.
 
+    // 2. 根据是挂载还是更新阶段，选择对应 hook 调度器
     {
       if (current !== null && current.memoizedState !== null) {
         ReactCurrentDispatcher$1.current = HooksDispatcherOnUpdateInDEV;
+        console.log(`%c=探究初始和hook=renderWithHooks挂载更新阶段:HooksDispatcherOnUpdateInDEV`, 'color:blueviolet', { current: HooksDispatcherOnUpdateInDEV })
       } else if (hookTypesDev !== null) {
         // This dispatcher handles an edge case where a component is updating,
         // but no stateful hooks have been used.
@@ -16187,11 +16192,15 @@
         // This dispatcher does that.
         ReactCurrentDispatcher$1.current = HooksDispatcherOnMountWithHookTypesInDEV;
       } else {
+        console.log(`%c=探究初始和hook=renderWithHooks挂载dev HooksDispatcherOnMountInDEV hook`, 'color:blueviolet', { current: HooksDispatcherOnMountInDEV })
         ReactCurrentDispatcher$1.current = HooksDispatcherOnMountInDEV;
       }
     }
 
+    // 3. 调用函数组件，里面执行各种 React Hook，并返回 ReactElement
+    console.log(`%c=探究初始和hook=renderWithHooks重点，调用函数组件，里面执行各种 React Hook==start并返回 ReactElement`, 'color:blueviolet', Component)
     var children = Component(props, secondArg); // Check if there was a render phase update
+    console.log(`%c=探究初始和hook=renderWithHooks重点,返回 ReactElement==end`, 'color:blueviolet', { children })
 
     if (didScheduleRenderPhaseUpdateDuringThisPass) {
       // Keep rendering in a loop for as long as render phase updates continue to
@@ -16224,13 +16233,16 @@
           hookTypesUpdateIndexDev = -1;
         }
 
+        console.log(`%c=探究初始和hook=renderWithHooks`, 'color:blueviolet', { current: HooksDispatcherOnRerenderInDEV })
+
         ReactCurrentDispatcher$1.current = HooksDispatcherOnRerenderInDEV;
         children = Component(props, secondArg);
       } while (didScheduleRenderPhaseUpdateDuringThisPass);
     } // We can assume the previous dispatcher is always this one, since we set it
     // at the beginning of the render phase and there's no re-entrance.
 
-
+    // 4. hook 调度器还原为 ContextOnlyDispatcher
+    console.log(`%c=探究初始和hook=renderWithHooks挂载,调度器还原为 ContextOnlyDispatcher`, 'color:blueviolet', { current: ContextOnlyDispatcher })
     ReactCurrentDispatcher$1.current = ContextOnlyDispatcher;
 
     {
@@ -16239,6 +16251,7 @@
     // hookTypesDev could catch more cases (e.g. context) but only in DEV bundles.
 
 
+    console.log(`%c=探究初始和hook=renderWithHooks挂载,将一些全局变量进行重置`, 'color:blueviolet')
     var didRenderTooFewHooks = currentHook !== null && currentHook.next !== null;
     renderLanes = NoLanes;
     currentlyRenderingFiber$1 = null;
@@ -16266,12 +16279,14 @@
     didScheduleRenderPhaseUpdate = false; // This is reset by checkDidRenderIdHook
     // localIdCounter = 0;
 
+    // Hook 数量比上次少，对不上，报错
     if (didRenderTooFewHooks) {
       throw new Error('Rendered fewer hooks than expected. This may be caused by an accidental ' + 'early return statement.');
     }
 
     return children;
   }
+
   function checkDidRenderIdHook() {
     // This should be called immediately after every renderWithHooks call.
     // Conceptually, it's part of the return value of renderWithHooks; it's only a
@@ -16348,10 +16363,12 @@
 
     if (workInProgressHook === null) {
       // This is the first hook in the list
+      console.log('=useState=dom=调用workInProgressHook 初始化 1:', { hook, workInProgressHook })
       currentlyRenderingFiber$1.memoizedState = workInProgressHook = hook;
     } else {
       // Append to the end of the list
       workInProgressHook = workInProgressHook.next = hook;
+      console.log('=useState=dom=调用workInProgressHook 2 添加到list 末尾:', { hook, workInProgressHook })
     }
 
     return workInProgressHook;
@@ -16455,6 +16472,7 @@
 
   function updateReducer(reducer, initialArg, init) {
     var hook = updateWorkInProgressHook();
+    console.log('=updateState=updateReducer调用updateWorkInProgressHook返回', { hook })
     var queue = hook.queue;
 
     if (queue === null) {
@@ -16881,11 +16899,14 @@
       lastRenderedState: initialState
     };
     hook.queue = queue;
-    var dispatch = queue.dispatch = dispatchSetState.bind(null, currentlyRenderingFiber$1, queue);
+
+    var dispatch = queue.dispatch = dispatchSetState.bind(null, currentlyRenderingFiber$1, queue)
+    console.log('=useState=dom=利用bind返回dispatch:', { dispatch })
     return [hook.memoizedState, dispatch];
   }
 
   function updateState(initialState) {
+    console.log('=updateState调用updateReducer')
     return updateReducer(basicStateReducer);
   }
 
@@ -17256,6 +17277,7 @@
   }
 
   function updateTransition() {
+    console.log('=updateState 3')
     var _updateState = updateState(),
       isPending = _updateState[0];
 
@@ -17359,7 +17381,10 @@
       }
     }
 
+    console.log('=useState=app=dispatchSetState:', { fiber, queue, action })
+
     var lane = requestUpdateLane(fiber);
+    // 创建一个 update 更新对象
     var update = {
       lane: lane,
       action: action,
@@ -17369,6 +17394,7 @@
     };
 
     if (isRenderPhaseUpdate(fiber)) {
+      console.log('=useState=app=dispatchSetState调用enqueueRenderPhaseUpdate渲染阶段更新:')
       enqueueRenderPhaseUpdate(queue, update);
     } else {
       enqueueUpdate$1(fiber, queue, update);
@@ -17378,7 +17404,9 @@
         // The queue is currently empty, which means we can eagerly compute the
         // next state before entering the render phase. If the new state is the
         // same as the current state, we may be able to bail out entirely.
+
         var lastRenderedReducer = queue.lastRenderedReducer;
+        console.log('=useState=app=dispatchSetState 计算新状态', { queue, lastRenderedReducer })
 
         if (lastRenderedReducer !== null) {
           var prevDispatcher;
@@ -17389,7 +17417,9 @@
           }
 
           try {
+            // currentState 旧值
             var currentState = queue.lastRenderedState;
+            // currentState 新值
             var eagerState = lastRenderedReducer(currentState, action); // Stash the eagerly computed state, and the reducer used to compute
             // it, on the update object. If the reducer hasn't changed by the
             // time we enter the render phase, then the eager state can be used
@@ -17397,7 +17427,7 @@
 
             update.hasEagerState = true;
             update.eagerState = eagerState;
-
+            console.log('=useState=app=dispatchSetState 对比新旧状态是否不同', { eagerState, currentState, objectIs: objectIs(eagerState, currentState) })
             if (objectIs(eagerState, currentState)) {
               // Fast path. We can bail out without scheduling React to re-render.
               // It's still possible that we'll need to rebase this update later,
@@ -17415,6 +17445,7 @@
       }
 
       var eventTime = requestEventTime();
+      console.log('=useState=app=dispatchSetState调用scheduleUpdateOnFiber调度fiber更新')
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -17616,10 +17647,13 @@
       useState: function (initialState) {
         currentHookNameInDev = 'useState';
         mountHookTypesDev();
+        console.log('=useState=dom=挂载的函数1:', ReactCurrentDispatcher$1.current)
         var prevDispatcher = ReactCurrentDispatcher$1.current;
         ReactCurrentDispatcher$1.current = InvalidNestedHooksDispatcherOnMountInDEV;
+        console.log('=useState=dom=挂载的函数2:', InvalidNestedHooksDispatcherOnMountInDEV)
 
         try {
+          console.log('=useState=dom=调用mountState', { initialState })
           return mountState(initialState);
         } finally {
           ReactCurrentDispatcher$1.current = prevDispatcher;
@@ -17836,6 +17870,7 @@
         ReactCurrentDispatcher$1.current = InvalidNestedHooksDispatcherOnUpdateInDEV;
 
         try {
+          console.log('=updateState=4', { initialState })
           return updateState(initialState);
         } finally {
           ReactCurrentDispatcher$1.current = prevDispatcher;
@@ -18188,6 +18223,7 @@
         ReactCurrentDispatcher$1.current = InvalidNestedHooksDispatcherOnUpdateInDEV;
 
         try {
+          console.log('=updateState 1')
           return updateState(initialState);
         } finally {
           ReactCurrentDispatcher$1.current = prevDispatcher;
@@ -20066,6 +20102,7 @@
     {
       ReactCurrentOwner$1.current = workInProgress;
       setIsRendering(true);
+      console.log(`%c=探究初始和hook=updateForwardRef调用renderWithHooks 3`, 'color:blueviolet')
       nextChildren = renderWithHooks(current, workInProgress, render, nextProps, ref, renderLanes);
       hasId = checkDidRenderIdHook();
 
@@ -20073,6 +20110,7 @@
         setIsStrictModeForDevtools(true);
 
         try {
+          console.log(`%c=探究初始和hook=updateForwardRef调用renderWithHooks 4`, 'color:blueviolet')
           nextChildren = renderWithHooks(current, workInProgress, render, nextProps, ref, renderLanes);
           hasId = checkDidRenderIdHook();
         } finally {
@@ -20098,6 +20136,8 @@
 
 
     workInProgress.flags |= PerformedWork;
+    console.log(`%c=探究初始和hook=reconcileChildren`, 'color:blueviolet')
+    console.log('=reconcileChildren 2')
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   }
@@ -20349,6 +20389,7 @@
       pushRenderLanes(workInProgress, _subtreeRenderLanes);
     }
 
+    console.log('=reconcileChildren 3')
     {
       reconcileChildren(current, workInProgress, nextChildren, renderLanes);
       return workInProgress.child;
@@ -20357,12 +20398,14 @@
 
   function updateFragment(current, workInProgress, renderLanes) {
     var nextChildren = workInProgress.pendingProps;
+    console.log('=reconcileChildren 4')
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   }
 
   function updateMode(current, workInProgress, renderLanes) {
     var nextChildren = workInProgress.pendingProps.children;
+    console.log('=reconcileChildren 5')
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   }
@@ -20382,6 +20425,7 @@
 
     var nextProps = workInProgress.pendingProps;
     var nextChildren = nextProps.children;
+    console.log('=reconcileChildren 6')
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   }
@@ -20431,6 +20475,7 @@
     {
       ReactCurrentOwner$1.current = workInProgress;
       setIsRendering(true);
+      console.log(`%c=探究初始和hook=updateFunctionComponent调用renderWithHooks 6`, 'color:blueviolet')
       nextChildren = renderWithHooks(current, workInProgress, Component, nextProps, context, renderLanes);
       hasId = checkDidRenderIdHook();
 
@@ -20438,6 +20483,7 @@
         setIsStrictModeForDevtools(true);
 
         try {
+          console.log(`%c=探究初始和hook=updateFunctionComponent调用renderWithHooks 7`, 'color:blueviolet')
           nextChildren = renderWithHooks(current, workInProgress, Component, nextProps, context, renderLanes);
           hasId = checkDidRenderIdHook();
         } finally {
@@ -20463,6 +20509,8 @@
 
 
     workInProgress.flags |= PerformedWork;
+    console.log(`%c=探究初始和hook=updateFunctionComponent调用reconcileChildren`, 'color:blueviolet')
+    console.log('=reconcileChildren 7')
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   }
@@ -20635,6 +20683,7 @@
       // normal children even if their identities match.
       forceUnmountCurrentAndReconcile(current, workInProgress, nextChildren, renderLanes);
     } else {
+      console.log('=reconcileChildren 8')
       reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     } // Memoize state using the values we just used to render.
     // TODO: Restructure so we never read values from the instance.
@@ -20736,6 +20785,7 @@
         return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
       }
 
+      console.log('=reconcileChildren 9')
       reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     }
 
@@ -20747,6 +20797,7 @@
     resetHydrationState();
     queueHydrationError(recoverableError);
     workInProgress.flags |= ForceClientRender;
+    console.log('=reconcileChildren 10')
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   }
@@ -20777,6 +20828,7 @@
     }
 
     markRef$1(current, workInProgress);
+    console.log('=reconcileChildren 11')
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   }
@@ -20957,7 +21009,9 @@
 
       setIsRendering(true);
       ReactCurrentOwner$1.current = workInProgress;
+      console.log(`%c=探究初始和hook=mountIndeterminateComponent调用renderWithHooks 1`, 'color:blueviolet', { workInProgress, Component, props, context, renderLanes })
       value = renderWithHooks(null, workInProgress, Component, props, context, renderLanes);
+      console.log(`%c=探究初始和hook=mountIndeterminateComponent调用renderWithHooks 返回值`, 'color:blueviolet', { value })
       hasId = checkDidRenderIdHook();
       setIsRendering(false);
     }
@@ -21028,6 +21082,7 @@
           setIsStrictModeForDevtools(true);
 
           try {
+            console.log(`%c=探究初始和hook=mountIndeterminateComponent调用renderWithHooks 2`, 'color:blueviolet')
             value = renderWithHooks(null, workInProgress, Component, props, context, renderLanes);
             hasId = checkDidRenderIdHook();
           } finally {
@@ -21039,7 +21094,7 @@
       if (getIsHydrating() && hasId) {
         pushMaterializedTreeId(workInProgress);
       }
-
+      console.log('=reconcileChildren 12')
       reconcileChildren(null, workInProgress, value, renderLanes);
 
       {
@@ -21876,6 +21931,7 @@
     validateRevealOrder(revealOrder);
     validateTailOptions(tailMode, revealOrder);
     validateSuspenseListChildren(newChildren, revealOrder);
+    console.log('=reconcileChildren 13')
     reconcileChildren(current, workInProgress, newChildren, renderLanes);
     var suspenseContext = suspenseStackCursor.current;
     var shouldForceFallback = hasSuspenseContext(suspenseContext, ForceSuspenseFallback);
@@ -21991,6 +22047,7 @@
       // TODO: Consider unifying this with how the root works.
       workInProgress.child = reconcileChildFibers(workInProgress, null, nextChildren, renderLanes);
     } else {
+      console.log('=reconcileChildren 14')
       reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     }
 
@@ -22042,6 +22099,7 @@
     }
 
     var newChildren = newProps.children;
+    console.log('=reconcileChildren 15')
     reconcileChildren(current, workInProgress, newChildren, renderLanes);
     return workInProgress.child;
   }
@@ -22105,6 +22163,7 @@
 
 
     workInProgress.flags |= PerformedWork;
+    console.log('=reconcileChildren 16')
     reconcileChildren(current, workInProgress, newChildren, renderLanes);
     return workInProgress.child;
   }
@@ -22471,6 +22530,7 @@
       case IndeterminateComponent:
         {
           console.log('%c=beginWork()==end 2 mountIndeterminateComponent', 'color:magenta')
+          console.log(`%c=探究初始和hook=调用mountIndeterminateComponent`, 'color:blueviolet')
           return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
         }
 
@@ -22486,7 +22546,7 @@
           var Component = workInProgress.type;
           var unresolvedProps = workInProgress.pendingProps;
           var resolvedProps = workInProgress.elementType === Component ? unresolvedProps : resolveDefaultProps(Component, unresolvedProps);
-          console.log('%c=beginWork()=end 4 updateFunctionComponent', 'color:magenta')
+          console.log('%c=beginWork()=end 4只有更新才会调用updateFunctionComponent', 'color:magenta')
           return updateFunctionComponent(current, workInProgress, Component, resolvedProps, renderLanes);
         }
 
@@ -25686,11 +25746,11 @@
           ReactCurrentActQueue$1.didScheduleLegacyUpdate = true;
         }
 
-        console.log('%c=render阶段准备:,', 'color:red', 'ensureRootIsScheduled()调用performSyncWorkOnRoot()：异步更新legacy模式1==')
+        console.log('%c=render阶段准备:ensureRootIsScheduled调用performSyncWorkOnRoot：异步更新legacy模式1==', 'color:red')
         scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root));
       } else {
 
-        console.log('%c=render阶段准备:,', 'color:red', 'ensureRootIsScheduled()调用performSyncWorkOnRoot()：异步更新legacy模式2==')
+        console.log('%c=render阶段准备:ensureRootIsScheduled调用performSyncWorkOnRoot：异步更新legacy模式2==', 'color:red')
         scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
       }
 
@@ -25758,7 +25818,7 @@
     } // Since we know we're in a React event, we can clear the current
     // event time. The next update will compute a new event time.
 
-    console.log('%c==render阶段准备:重点函数performConcurrentWorkOnRoot,%c这个函数在render结束会开启commit阶段', 'color:red', 'color:cyan');
+    console.log('%c==render阶段准备:重点函数performConcurrentWorkOnRoot,这个函数在render结束会开启commit阶段', 'color:red', 'color:cyan');
 
     currentEventTime = NoTimestamp;
     currentEventTransitionLane = NoLanes;

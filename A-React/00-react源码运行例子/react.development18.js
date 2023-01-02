@@ -1609,7 +1609,10 @@
   }
   function useState(initialState) {
     var dispatcher = resolveDispatcher();
-    return dispatcher.useState(initialState);
+    console.log('=useState=dev=调用dom定义的useState', { initialState, dispatcher })
+    const dispatcherRes = dispatcher.useState(initialState)
+    console.log('=useState=dev=调用dom定义的useState最后返回值===', dispatcherRes)
+    return dispatcherRes;
   }
   function useReducer(reducer, initialArg, init) {
     var dispatcher = resolveDispatcher();
