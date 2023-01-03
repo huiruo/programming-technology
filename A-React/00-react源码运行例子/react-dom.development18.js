@@ -16153,9 +16153,11 @@
 
   function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
     renderLanes = nextRenderLanes;
+
+    console.log(`%c=探究初始和hook=renderWithHooks workInProgress,可以看到memoizedState 保存不同类型数据构成hooks的链表结构:`, 'color:blueviolet', workInProgress)
     // 1. 将workInProgress 赋值给全局变量 currentlyRenderingFiber
     // 这样在调用 Hook 时就能知道对应的 fiber 是谁
-    console.log(`%c=探究初始和hook=renderWithHooks挂载将workInProgress 赋值给全局变量 currentlyRenderingFiber,这样在调用 Hook 时就能知道对应的 fiber 是谁`, 'color:blueviolet')
+    console.log(`%c=探究初始和hook=renderWithHooks挂载将workInProgress赋值给全局变量currentlyRenderingFiber,这样在调用 Hook 时就能知道对应的fiber是谁`, 'color:blueviolet')
     currentlyRenderingFiber$1 = workInProgress;
 
     {
@@ -16472,9 +16474,10 @@
 
   function updateReducer(reducer, initialArg, init) {
     var hook = updateWorkInProgressHook();
-    console.log('=updateState=updateReducer调用updateWorkInProgressHook返回', { hook })
+    console.log('%c=updateState=updateReducer调用updateWorkInProgressHook,拷贝hook(current->workInProcess),并返回这个hook', 'color:cyan', { hook })
     var queue = hook.queue;
 
+    console.log('%c=updateState=updateReducer读取队列,计算出最新状态，更新hook的状态', 'color:cyan')
     if (queue === null) {
       throw new Error('Should have a queue. This is likely a bug in React. Please file an issue.');
     }
@@ -16614,6 +16617,7 @@
     }
 
     var dispatch = queue.dispatch;
+    console.log('%c=updateState=updateReducer最终返回值', 'color:cyan', [hook.memoizedState, dispatch])
     return [hook.memoizedState, dispatch];
   }
 
@@ -17445,7 +17449,7 @@
       }
 
       var eventTime = requestEventTime();
-      console.log('=useState=app=dispatchSetState调用scheduleUpdateOnFiber调度fiber更新')
+      console.log('%c=useState=app=重点:dispatchSetState调用scheduleUpdateOnFiberfiber更新', 'color:blueviolet')
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -17496,10 +17500,13 @@
 
       queue.interleaved = update;
     } else {
+
+      console.log('=useState=app=enqueueUpdate$1将update对象添加到hook.queue.pending队列')
       var pending = queue.pending;
 
       if (pending === null) {
         // This is the first update. Create a circular list.
+        console.log('=useState=app=首个update, 创建一个环形链表')
         update.next = update;
       } else {
         update.next = pending.next;
