@@ -16568,6 +16568,7 @@
           if (update.hasEagerState) {
             // If this update is a state update (not a reducer) and was processed eagerly,
             // we can use the eagerly computed state
+            // 状态已经计算过，那就直接用
             newState = update.eagerState;
           } else {
             var action = update.action;
@@ -16576,6 +16577,7 @@
         }
 
         update = update.next;
+        // 终止条件是指针为空 或 环已遍历完
       } while (update !== null && update !== first);
 
       if (newBaseQueueLast === null) {
@@ -17113,28 +17115,35 @@
 
   var updateDebugValue = mountDebugValue;
 
+  // 装载阶段
   function mountCallback(callback, deps) {
+    // 获取对应的 hook 节点
     var hook = mountWorkInProgressHook();
+    // 依赖为 undefiend，则设置为 null
     var nextDeps = deps === undefined ? null : deps;
+    // 将当前的函数和依赖暂存
     hook.memoizedState = [callback, nextDeps];
     return callback;
   }
 
+  // 更新阶段
   function updateCallback(callback, deps) {
     var hook = updateWorkInProgressHook();
     var nextDeps = deps === undefined ? null : deps;
+    // 获取上次暂存的 callback 和依赖
     var prevState = hook.memoizedState;
 
     if (prevState !== null) {
       if (nextDeps !== null) {
         var prevDeps = prevState[1];
-
+        // 将上次依赖和当前依赖进行浅层比较，相同的话则返回上次暂存的函数
         if (areHookInputsEqual(nextDeps, prevDeps)) {
           return prevState[0];
         }
       }
     }
 
+    // 否则则返回最新的函数
     hook.memoizedState = [callback, nextDeps];
     return callback;
   }
@@ -17491,6 +17500,7 @@
         // This is the first update. Create a circular list.
         update.next = update; // At the end of the current render, this queue's interleaved updates will
         // be transferred to the pending queue.
+        console.log('=useState=app=首个update 1, 自己指向自己创建一个环状链表,创建一个环形链表')
 
         pushInterleavedQueue(queue);
       } else {
@@ -17506,7 +17516,7 @@
 
       if (pending === null) {
         // This is the first update. Create a circular list.
-        console.log('=useState=app=首个update, 创建一个环形链表')
+        console.log('=useState=app=首个update 2, 自己指向自己创建一个环状链表,创建一个环形链表')
         update.next = update;
       } else {
         update.next = pending.next;

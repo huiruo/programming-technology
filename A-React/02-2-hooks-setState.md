@@ -59,8 +59,90 @@ b10--1-->b11("hook=updateWorkInProgressHook(),hook:最新状态值和setState()"
 b10--2-->b12("读取队列,计算出最新状态，更新hook的状态")
 ```
 
+
+
+# 关于hook 问题
+## 1.React Hooks 为什么不能写在条件语句中？
+要保证 React Hooks 的顺序一致。
+
+```javaScript
+const [data, setData] = React.useState('改变我')
+const [showDiv, setShowDiv] = React.useState(false)
+```
+
+每一个组件都会有一个fiber对象，在fiber中我们主要关注memoizedState这个对象，它就是调用完useState后对应的存储state的对象。
+
+每一个useState都会在当前组件中创建一个hook对象 ，并且这个对象中的next属性始终执行下一个useState的hook对象,这些对象以一种类似链表的形式存在 Fiber.memoizedState 中
+
+调用useState后设置在memoizedState上的对象长这样：（又叫Hook对象）
+```javaScript
+{
+  baseState,
+  next,  
+  baseUpdate,
+  queue,
+  memoizedState
+}
+```
+
+而函数组件就是通过fiber这个数据结构来实现每次render后name address不会被useState重新初始化。
+这里面我们最需要关心的是memoizedState和next，memoizedState是用来记录这个useState应该返回的结果的，而next指向的是下一次useState对应的Hook对象，即
+```
+hook1  ==>	Fiber.memoizedState
+state1 === hook1.memoizedState
+hook1.next	==>	hook2
+state2	==>	hook2.memoizedState
+....
+```
+
+通过上面介绍已经知道各个 hook 在 mount 时会以链表的形式挂到 fiber.memoizedState上。
+update 时会进入到 HooksDispatcherOnUpdateInDEV，执行不同 hook 的 updateXxx 方法。
+
+最终会通过 updateWorkInProgressHook方法获取当前 hook 的对象，获取方式就是从当前 fiber.memoizedState上依次获取，遍历的是 mount 阶段创建的链表，故不能改变 hook 的执行顺序，否则会拿错。（updateWorkInProgressHook 也是个通用方法，updateXXX 都是走到这个地方）
+
+
+函数组件的状态是保存在 fiber.memorizedState 中的。它是一个链表，保存调用 Hook 生成的 hook 对象，这些对象保存着状态值。当更新时，我们每调用一个 Hook，其实就是从 fiber.memorizedState 链表中读取下一个 hook，取出它的状态。
+
+如果顺序不一致了或者数量不一致了，就会导致错误，取出了一个其他 Hook 对应的状态值。
+
+正是因为hooks中是这样存储state的 所以我们只能在hooks的根作用域中使用useState，而不能在条件语句和循环中使用,因为我们不能每次都保证条件或循环语句都会执行:
+```javascript
+if (something) {
+  const [state1] = useState(1)
+}
+
+// or
+
+for (something) {
+  const [state2] = useState(2)
+}
+```
+
+
+## 问题1： setState()函数在任何情况下都会导致组件重渲染吗？如果setState中的state没有发生改变呢？
+比对是依赖项是否一致的时候，用的是Object.is：
+
+Object.is() 与 === 不相同。差别是它们对待有符号的零和 NaN 不同，例如，=== 运算符（也包括 == 运算符）将数字 -0 和 +0 视为相等，而将 Number.NaN 与 NaN 视为不相等。
+
+例5-主要测试实5-没有导致state的值发生变化的setState是否会导致重渲染.html
+
+没有导致state的值发生变化的this.setState()是否会导致重渲染-->不会
+
+
+## 问题2： 如果state和从父组件传过来的props都没变化，那他就一定不会发生重渲染吗？
+存疑？这个问题还没探究
+
+当React重新渲染时ParentComponent，它将自动重新渲染ChildComponent。要解决的唯一途径是实现shouldComponentUpdate
+```javaScript
+shouldComponentUpdate(nextProps,nextState){
+    if(nextState.Number == this.state.Number){
+      return false
+    }
+}
+```
+
 # 前言
-### 一些全局变量,在讲解源码之前，先认识一些 重要的全局变量：
+## 一些全局变量,在讲解源码之前，先认识一些 重要的全局变量：
 * currentlyRenderingFiber：正在处理的函数组件对应 fiber。在执行 useState 等 hook 时，需要通过它知道当前 hook 对应哪个 fiber。
 
 * workInProgressHook：挂载时正在处理的 hook 对象。我们会沿着 workInProcess.memoizedState 链表一个个往下走，这个 workInProgressHook 就是该链表的指针。
@@ -72,7 +154,428 @@ b10--2-->b12("读取队列,计算出最新状态，更新hook的状态")
   * HooksDispatcherOnMount：挂载阶段用。比如它的 useState 要将初始值保存起来；
   * HooksDispatcherOnUpdate：更新阶段用。比如它的 useState 会无视传入的初始值，而是从链表中取出值。
 
-### Fiber 数据结构:
+## hooks:闭包 + 两级链表
+### 首先，Hooks是以单向链表的形式存储在 Fiber 的 memoizedState 属性身上
+```mermaid
+graph LR
+1[Fiber] --memoized--> 2[useReducer] --next-->3[userState]--next-->4[useEffect]
+```
+
+### 同时，每个hooks又拥有自己的更新队列queue，queue.pending 会指向一个环状链表
+
+```mermaid
+graph LR
+1[Fiber] ==> |memoized|2[useReducer] ==>|next| 3[userState]==>|next| 4[useEffect]
+
+2 -.->|quene.pending| B1((update3))--next-->B2
+
+B2((update1))--next-->B3((update2))--next-->B1
+```
+
+- 由图可知，queue.pending 永远指向最后一个更新
+- 由图可知，pending.next 永远指向第一个更新
+
+
+## 为什么要是环状链表？
+为什么要用环状链表呢?
+因为React的更新任务是有优先级的。
+
+假如有三个 update，第二个update的优先级比较高，那么会先执行第二个 update，单向链表可能会导致第一个update丢失，而环状链表的优势在于可以从任何节点开始循环链表。总结来说：环状链表可以保证update不丢失，并且保证状态依赖的连续性。
+
+在获取头部或者插入尾部的时候避免不必要的遍历操作
+
+（上面提到的 fiber.updateQueue 、 useEffect 创建的 hook 对象中的 memoizedState 存的 effect 环状链表，以及 useState 的 queue.pending 上的 update 对象的环状链表，都是这个原因）
+
+方便定位到链表的第一个元素。updateQueue 指向它的最后一个 update，updateQueue.next 指向它的第一个update。
+
+若不使用环状链表，updateQueue 指向最后一个元素，需要遍历才能获取链表首部。即使将updateQueue指向第一个元素，那么新增update时仍然要遍历到尾部才能将新增的接入链表。
+
+### 辅:单向链表js实现
+```javaScript
+function buildQueue(queue,action){
+    const update = {action,next:null}
+    const pending = queue.pending
+ 
+    if(!pending){
+        queue.pending = update
+    }else{
+        let current = queue.pending
+        // 找到末尾的元素
+        while(current.next){
+            current = current.next
+        }
+        // 将update挂载到链表的末尾
+        current.next = update
+    }
+}
+ 
+// excute
+let queue = {pending:null}
+buildQueue(queue,'hooks1')
+buildQueue(queue,'hooks2')
+ 
+// output: queue.pending = {action:'hooks1',next:{action:'hooks2',next:null}}
+```
+
+### 辅:环状链表js实现
+```javaScript
+function dispatchAction(queue,action){
+     const update = {action,next:null}
+     const pending = queue.pending
+     if(pending === null){
+        update.next = update // 自己与自己创建一个环状链表
+     }else{
+        update.next = pending.next
+        pending.next = update
+     }
+     queue.pending = update
+}
+ 
+let queue = {pending:null}
+ 
+/**
+ * update.next === update
+ * queue.pending === update(action) 
+ */
+dispatchAction(queue,'action')
+ 
+ 
+/**
+ * update(action1).next -> update(action).next [update(action)]    
+ * update1 的next 指向 update
+ * queue.pending.next [update(update)] -> update(action1)          
+ * update 指向 update1
+ * queue.pending -> update(action1)                                
+ * queue.pending 指向 update1
+ */
+dispatchAction(queue,'action1')
+```
+
+
+### 1.闭包
+闭包是指有权访问另一个函数作用域中变量或方法的函数，创建闭包的方式就是在一个函数内创建闭包函数，通过闭包函数访问这个函数的局部变量, 利用闭包可以突破作用链域的特性，将函数内部的变量和方法传递到外部。
+
+```javascript
+export default function Hooks() {
+  const [count, setCount] = useState(0);
+  const [age, setAge] = useState(18);
+
+  const self = useRef(0);
+
+  const onClick = useCallback(() => {
+    setAge(19);
+    setAge(20);
+    setAge(21);
+  }, []);
+
+  console.log('self', self.current);
+  return (
+    <div>
+      <h2>年龄： {age} <a onClick={onClick}>增加</a></h2>
+      <h3>轮次： {count} <a onClick={() => setCount(count => count + 1)}>增加</a></h3>
+    </div>
+  );
+}
+```
+以上面的示例来讲，闭包就是setAge这个函数，何以见得呢，看组件挂载阶段hook执行的源码：
+```javaScript
+function useState(initialState) {
+  console.log('=useState=dev=调用mountState', { initialState })
+  var dispatcher = resolveDispatcher();
+  return dispatcher.useState(initialState);
+}
+
+useState: function (initialState) {
+  currentHookNameInDev = 'useState';
+  mountHookTypesDev();
+  var prevDispatcher = ReactCurrentDispatcher$1.current;
+  ReactCurrentDispatcher$1.current = InvalidNestedHooksDispatcherOnMountInDEV;
+
+  try {
+    console.log('=useState=调用mountState', { initialState })
+    return mountState(initialState);
+  } finally {
+    ReactCurrentDispatcher$1.current = prevDispatcher;
+  }
+}
+
+function mountState(initialState) {
+  var hook = mountWorkInProgressHook();
+
+  if (typeof initialState === 'function') {
+    // $FlowFixMe: Flow doesn't like mixed types
+    initialState = initialState();
+  }
+
+  hook.memoizedState = hook.baseState = initialState;
+  var queue = {
+    pending: null,
+    interleaved: null,
+    lanes: NoLanes,
+    dispatch: null,
+    lastRenderedReducer: basicStateReducer,
+    lastRenderedState: initialState
+  };
+  hook.queue = queue;
+
+  // 重点
+  var dispatch = queue.dispatch = dispatchSetState.bind(null, currentlyRenderingFiber$1, queue)
+  console.log('=useState=dom=利用bind返回dispatch:', { dispatch })
+  return [hook.memoizedState, dispatch];
+}
+```
+
+而产生的闭包就是dispatch函数（对应上面的setAge），被闭包引用的变量就是
+currentlyRenderingFiber 与 queue。
+
+currentlyRenderingFiber: 其实就是workInProgressTree, 即更新时链表当前正在遍历的fiber节点
+
+queue: 指向hook.queue，保存当前hook操作相关的reducer 和 状态的对象，其来源于mountWorkInProgressHook这个函数，下面重点讲；
+
+这个闭包将 fiber节点与action, action 与 state很好的串联起来了，举上面的例子就是：
+
+当点击增加执行setAge, 执行后，新的state更新任务就储存在fiber节点的hook.queue上，并触发更新；
+
+
+当节点更新时，会遍历queue上的state任务链表，计算最终的state，并进行渲染；
+
+ok，到这，闭包就讲完了。
+
+
+### 2.第一个链表：hooks,单向链表实现
+```javascript
+/*
+Hooks are stored as a linked list on the fiber's memoizedState field.  
+hooks 以链表的形式存储在fiber节点的memoizedState属性上
+The current hook list is the list that belongs to the current fiber.
+当前的hook链表就是当前正在遍历的fiber节点上的
+The work-in-progress hook list is a new list that will be added to the work-in-progress fiber.
+work-in-progress hook 就是即将被添加到正在遍历fiber节点的hooks新链表
+*/
+let currentHook: Hook | null = null;
+let nextCurrentHook: Hook | null = null;
+```
+
+从上面的源码注释可以看出hooks链表与fiber链表是极其相似的；也得知hooks 链表是保存在fiber节点的memoizedState属性的, 
+
+
+这个hooks 链表具体指什么？
+其实就是指一个组件包含的hooks, 比如上面示例中的：
+```javascript
+const [count, setCount] = useState(0);
+const [age, setAge] = useState(18);
+const self = useRef(0);
+const onClick = useCallback(() => {
+  setAge(19);
+  setAge(20);
+  setAge(21);
+}, []);
+```
+形成的链表就是下面这样的：
+
+![](./img-react/图1hooks链表.PNG)
+
+所以在下一次更新时，再次执行hook，就会去获取当前运行节点的hooks链表；
+```js
+const hook = updateWorkInProgressHook();
+// updateWorkInProgressHook 就是一个纯链表的操作：指向下一个 hook节点
+```
+到这 hooks 链表是什么，应该就明白了；这时你可能会更明白，为什么hooks不能在循环，判断语句中调用，而只能在函数最外层使用，因为挂载或则更新时，这个队列需要是一致的，才能保证hooks的结果正确。
+
+### 2.第二个链表：环状链表实现
+state 链表不是hooks独有的，类操作的setState也存在，正是由于这个链表存在，所以有一个经典React 面试题：
+
+setState为什么默认是异步，什么时候是同步？
+
+1.异步:
++ setState 和 useState中的set函数是异步执行的（不会立即更新state的结果）
++ 多次执行setState 和 useState的set函数，组件只会重新渲染一次
+
++ 不同的是，setState会更新当前作用域下的状态，但是set函数不会更新，只能在新渲染的组件作用域中访问到
++ 同时setState会进行state的合并，但是useState中的set函数做的操作相当于是直接替换，只不过内部有个防抖的优化才导致组件不会立即被重新渲染
+
+2.同步：在setTimeout，Promise.then等异步事件或者原生事件中
++ setState和useState的set函数是同步执行的（立即重新渲染组件）
++ 多次执行setState和useState的set函数，每一次的执行都会调用一次render
+
+结合实例来看，当点击增加会执行三次setAge
+```javascript
+const onClick = useCallback(() => {
+  setAge(19);
+  setAge(20);
+  setAge(21);
+}, []);
+```
+
+环状链表实现
+
+建立这个链表的逻辑就在 dispatchSetState-->enqueueUpdate$1。
+```
+update(action1).next -> update(action).next [update(action)]    
+update1 的next 指向 update
+queue.pending.next [update(update)] -> update(action1)          
+update 指向 update1
+queue.pending -> update(action1)                                
+queue.pending 指向 update1
+```
+
+```javaScript
+function dispatchSetState(fiber, queue, action) {
+  // 省略..
+  // 创建一个 update 更新对象
+  var update = {
+    lane: lane,
+    action: action,
+    hasEagerState: false,
+    eagerState: null,
+    next: null
+  };
+  if (isRenderPhaseUpdate(fiber)) {
+    console.log('=useState=app=dispatchSetState调用enqueueRenderPhaseUpdate渲染阶段更新:')
+    enqueueRenderPhaseUpdate(queue, update);
+  } else {
+    enqueueUpdate$1(fiber, queue, update);
+  }
+
+  // 省略..
+}
+
+function enqueueUpdate$1(fiber, queue, update, lane) {
+  if (isInterleavedUpdate(fiber)) {
+    var interleaved = queue.interleaved;
+
+    if (interleaved === null) {
+      // This is the first update. Create a circular list.
+      update.next = update; // At the end of the current render, this queue's interleaved updates will
+      // be transferred to the pending queue.
+
+      pushInterleavedQueue(queue);
+    } else {
+      update.next = interleaved.next;
+      interleaved.next = update;
+    }
+
+    queue.interleaved = update;
+  } else {
+
+    console.log('=useState=app=enqueueUpdate$1将update对象添加到hook.queue.pending队列')
+    var pending = queue.pending;
+
+    if (pending === null) {
+      // This is the first update. Create a circular list.
+      console.log('=useState=app=首个update 2, 自己指向自己创建一个环状链表,创建一个环形链表')
+      update.next = update;
+    } else {
+      update.next = pending.next;
+      pending.next = update;
+    }
+
+    queue.pending = update;
+  }
+}
+```
+
+执行setAge 只是形成了状态待执行任务链表，真正得到最终状态，其实是在下一次更新(获取状态)时，即：
+```javaScript
+// 读取最新age
+const [age, setAge] = useState(18);
+```
+
+而获取最新状态的相关代码逻辑存在于updateReducer中：
+```javaScript
+function updateReducer(reducer, initialArg, init) {
+  var hook = updateWorkInProgressHook();
+  // 省略..
+  if (baseQueue !== null) {
+  // We have a queue to process.
+  var first = baseQueue.next;
+  var newState = current.baseState;
+  var newBaseState = null;
+  var newBaseQueueFirst = null;
+  var newBaseQueueLast = null;
+  var update = first;
+
+  do {
+    var updateLane = update.lane;
+
+    if (!isSubsetOfLanes(renderLanes, updateLane)) {
+      // Priority is insufficient. Skip this update. If this is the first
+      // skipped update, the previous update/state is the new base
+      // update/state.
+      var clone = {
+        lane: updateLane,
+        action: update.action,
+        hasEagerState: update.hasEagerState,
+        eagerState: update.eagerState,
+        next: null
+      };
+
+      if (newBaseQueueLast === null) {
+        newBaseQueueFirst = newBaseQueueLast = clone;
+        newBaseState = newState;
+      } else {
+        newBaseQueueLast = newBaseQueueLast.next = clone;
+      } // Update the remaining priority in the queue.
+      // TODO: Don't need to accumulate this. Instead, we can remove
+      // renderLanes from the original lanes.
+
+
+      currentlyRenderingFiber$1.lanes = mergeLanes(currentlyRenderingFiber$1.lanes, updateLane);
+      markSkippedUpdateLanes(updateLane);
+    } else {
+      // This update does have sufficient priority.
+      if (newBaseQueueLast !== null) {
+        var _clone = {
+          // This update is going to be committed so we never want uncommit
+          // it. Using NoLane works because 0 is a subset of all bitmasks, so
+          // this will never be skipped by the check above.
+          lane: NoLane,
+          action: update.action,
+          hasEagerState: update.hasEagerState,
+          eagerState: update.eagerState,
+          next: null
+        };
+        newBaseQueueLast = newBaseQueueLast.next = _clone;
+      } // Process this update.
+
+
+      if (update.hasEagerState) {
+        // If this update is a state update (not a reducer) and was processed eagerly,
+        // we can use the eagerly computed state
+        // 状态已经计算过，那就直接用
+        newState = update.eagerState;
+      } else {
+        var action = update.action;
+        newState = reducer(newState, action);
+      }
+    }
+
+    update = update.next;
+    // 终止条件是指针为空 或 环已遍历完
+  } while (update !== null && update !== first);
+
+  if (newBaseQueueLast === null) {
+    newBaseState = newState;
+  } else {
+    newBaseQueueLast.next = newBaseQueueFirst;
+  } // Mark that the fiber performed work, but only if the new state is
+  // different from the current state.
+
+
+  if (!objectIs(newState, hook.memoizedState)) {
+    markWorkInProgressReceivedUpdate();
+  }
+
+  hook.memoizedState = newState;
+  hook.baseState = newBaseState;
+  hook.baseQueue = newBaseQueueLast;
+  queue.lastRenderedState = newState;
+}
+  // 省略..
+}
+```
+
+## Fiber 数据结构:
 主要分下面几块：
 * 节点基础信息的描述
 * 描述与其它 fiber 节点连接的属性
@@ -131,7 +634,6 @@ function FiberNode(
 }
 ```
 
-### Hook 数据结构
 hook 的 memoizedState 存的是当前 hook 自己的值。
 ```javaScript
 const hook: Hook = {
@@ -144,70 +646,6 @@ const hook: Hook = {
   next: null,  // 下一个hook
 };
 ```
-
-## 不同类型hook的memoizedState保存不同类型数据，具体如下：
-比对是依赖项是否一致的时候，用的是Object.is：
-
-Object.is() 与 === 不相同。差别是它们对待有符号的零和 NaN 不同，例如，=== 运算符（也包括 == 运算符）将数字 -0 和 +0 视为相等，而将 Number.NaN 与 NaN 视为不相等。
-
-## 为什么要是环状链表？—— 在获取头部或者插入尾部的时候避免不必要的遍历操作
-（上面提到的 fiber.updateQueue 、 useEffect 创建的 hook 对象中的 memoizedState 存的 effect 环状链表，以及 useState 的 queue.pending 上的 update 对象的环状链表，都是这个原因）
-
-方便定位到链表的第一个元素。updateQueue 指向它的最后一个 update，updateQueue.next 指向它的第一个update。
-
-若不使用环状链表，updateQueue 指向最后一个元素，需要遍历才能获取链表首部。即使将updateQueue指向第一个元素，那么新增update时仍然要遍历到尾部才能将新增的接入链表。
-
-### useState
-对于const [state, updateState] = useState(initialState)，memoizedState保存state的值
-
-* mount 时：把传进来的 value 包装成一个含有 current 属性的对象，然后放在 memorizedState 属性上。
-```
-mount 时：将初始值存放在memoizedState 中，queue.pending用来存调用 setValue（即 dispath）时创建的最后一个 update ，是个环状链表，最终返回一个数组，包含初始值和一个由dispatchState创建的函数。
-```
-* update 时：可以看到，其实调用的是 updateReducer，只是 reducer 是固定好的，作用就是用来直接执行 setValue（即 dispath） 函数传进来的 action，即 useState 其实是对 useReducer 的一个封装，只是 reducer 函数是预置好的。
-
-
-updateReducer 主要工作：
-1. 将 baseQueue 和  pendingQueue 首尾合并形成新的链表
-
-2. baseQueue 为之前因为某些原因导致更新中断从而剩下的 update 链表，pendingQueue 则是本次产生的 update链表。会把 baseQueue 接在 pendingQueue 前面。
-3. 从 baseQueue.next 开始遍历整个链表执行 update，每次循环产生的 newState，作为下一次的参数，直到遍历完整个链表。即整个合并的链表是先执行上一次更新后再执行新的更新，以此保证更新的先后顺序。
-4. 最后更新 hook 上的参数，返回 state 和 dispatch。
-
-### useEffect
-memoizedState保存包含useEffect回调函数、依赖项等的链表数据结构effect。effect链表同时会保存在fiber.updateQueue中。
-
-mount 时和 update 时涉及的主要方法都是 pushEffect，update 时判断依赖是否变化的原理和useCallback 一致。像上面提到的 memoizedState 存的是创建的 effect 对象的环状链表。
-
-pushEffect 的作用：是创建 effect 对象，并将组件内的 effect 对象串成环状单向链表，放到fiber.updateQueue上面。即 effect 除了保存在 fiber.memoizedState 对应的 hook 中，还会保存在 fiber 的 updateQueue 中。
-
-hook 内部的 effect 主要是作为上次更新的 effect，为本次创建 effect 对象提供参照（对比依赖项数组），updateQueue 的 effect 链表会作为最终被执行的主体，带到 commit 阶段处理。即 fiber.updateQueue 会在本次更新的 commit 阶段中被处理，其中 useEffect 是异步调度的，而 useLayoutEffect 的 effect 会在 commit 的 layout 阶段同步处理。等到 commit 阶段完成，更新应用到页面上之后，开始处理 useEffect 产生的 effect，简单说：
-
-* useEffect 是异步调度，等页面渲染完成后再去执行，不会阻塞页面渲染。
-* uselayoutEffect 是在 commit 阶段新的 DOM 准备完成，但还未渲染到屏幕前，同步执行。
-
-### useRef
-对于useRef(1)，memoizedState保存{current: 1}。
-
-* mount 时：把传进来的 value 包装成一个含有 current 属性的对象，然后放在 memorizedState 属性上。
-
-* update 时：直接返回，没做特殊处理
-
-对于设置了 ref 的节点，什么时候 ref 值会更新？
-组件在 commit 阶段的 mutation 阶段执行 DOM 操作，所以对应 ref 的更新也是发生在 mutation 阶段。
-
-
-### useMemo
-对于useMemo(callback, [depA])，memoizedState保存[callback(), depA]
-
-* mount 时：在 memorizedState 上放了一个数组，第一个元素是传入的回调函数，第二个是传入的 deps。
-* update 时：更新的时候把之前的那个 memorizedState 取出来，和新传入的 deps 做下对比，如果没变，那就返回之前的回调函数，否则返回新传入的函数。
-
-### useCallback
-对于useCallback(callback, [depA])，memoizedState保存[callback, depA]。与useMemo的区别是，useCallback保存的是callback函数本身，而useMemo保存的是callback函数的执行结果。
-
-* mount 时：在 memorizedState 上放了一个数组，第一个元素是传入的回调函数，第二个是传入的 deps。
-* update 时：更新的时候把之前的那个 memorizedState 取出来，和新传入的 deps 做下对比，如果没变，那就返回之前的回调函数，否则返回新传入的函数。
 
 ### 例子1
 ```javaScript
@@ -309,22 +747,6 @@ function App() {
 以 useState 为例，mount 时会进入 HooksDispatcherOnMountInDEV 的 useState方法，最终执行 mountState
 
 下面有详细解析
-
-### 疑问
-1、React Hooks 为什么不能写在条件语句中？
-
-要保证 React Hooks 的顺序一致。
-
-通过上面介绍已经知道各个 hook 在 mount 时会以链表的形式挂到 fiber.memoizedState上。
-update 时会进入到 HooksDispatcherOnUpdateInDEV，执行不同 hook 的 updateXxx 方法。
-
-最终会通过 updateWorkInProgressHook方法获取当前 hook 的对象，获取方式就是从当前 fiber.memoizedState上依次获取，遍历的是 mount 阶段创建的链表，故不能改变 hook 的执行顺序，否则会拿错。（updateWorkInProgressHook 也是个通用方法，updateXXX 都是走到这个地方）
-
-
-函数组件的状态是保存在 fiber.memorizedState 中的。它是一个链表，保存调用 Hook 生成的 hook 对象，这些对象保存着状态值。当更新时，我们每调用一个 Hook，其实就是从 fiber.memorizedState 链表中读取下一个 hook，取出它的状态。
-
-如果顺序不一致了或者数量不一致了，就会导致错误，取出了一个其他 Hook 对应的状态值。
-
 
 # hooks基础
 ## 为什么hooks

@@ -17,6 +17,30 @@ destroyed()       <--> onUnmounted()
 errorCaptured()   <--> onErrorCaptured()
 ```
 
+```javaScript
+onBeforeMount(() => {
+  console.log('组件挂载前onBeforeMount')
+})
+onMounted(() => {
+  console.log('组件挂载后onMounted')
+})
+
+onBeforeUpdate(() => {
+  console.log('组件更新前onBeforeUpdate')
+})
+
+onUpdated(() => {
+  console.log('组件更新后onUpdated')
+})
+
+onBeforeUnmount(() => {
+  console.log('组件销毁前onBeforeUnmount')
+})
+onUnmounted(() => {
+  console.log('组件销毁后onUnmounted')
+})
+```
+
 ### 第一次页面加载会触发哪几个钩子?
 
 ### vue3
