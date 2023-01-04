@@ -14,6 +14,8 @@ const reducer = combineReducers({
 
 const enhancers = applyMiddleware(thunk)
 
+console.log('=createStore=start:')
 const store: any = createStore(reducer, enhancers);
+console.log('=createStore=end:store', store)
 
 export default store;
