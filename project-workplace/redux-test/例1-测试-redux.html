@@ -38,7 +38,8 @@
     const { applyMiddleware, createStore } = Redux
 
     const initUserState = {
-      increaseVal: 9
+      increaseVal: 9,
+      constVal: 100
     };
 
     const userStore = (
@@ -93,17 +94,16 @@
       });
     };
 
-    const mapDispatchToProps = (dispatch) => {
-      return {
-        onIncreaseAction: (data) => dispatch(onIncreaseAction(data)),
-      };
-    };
-
+    console.log('%c=react-app=Redux1Wrap-执行connect', 'color:white')
     const Redux1Wrap = connect((state) => {
       return {
         increaseVal: state.increaseVal
       };
-    }, mapDispatchToProps)(Redux1)
+    }, (dispatch) => {
+      return {
+        onIncreaseAction: (data) => dispatch(onIncreaseAction(data)),
+      };
+    })(Redux1)
 
     function Redux2(props) {
       const { increaseVal } = props
@@ -120,13 +120,33 @@
       );
     }
 
-    const mapStateToProps = (state) => {
+    console.log('%c=react-app=Redux2Wrap-执行connect', 'color:white')
+    const Redux2Wrap = connect((state) => {
       return {
         increaseVal: state.increaseVal
       };
-    };
-    const Redux2Wrap = connect(mapStateToProps, null)(Redux2)
+    }, null)(Redux2)
     // console.log('ReactRedux.connect:', Redux2Wrap)
+
+    function Redux3(props) {
+      const { constVal } = props
+      console.log('=Redux3 render:', props)
+
+      return (
+        <div>
+          同级组件,固定值：<span>
+            {constVal}
+          </span>
+        </div>
+      );
+    }
+
+    console.log('%c=react-app=Redux3Wrap-执行connect', 'color:white')
+    const Redux3Wrap = connect((state) => {
+      return {
+        constVal: state.constVal
+      };
+    }, null)(Redux3)
 
 
     function Test() {
@@ -155,6 +175,7 @@
           <span>{data}</span>
           <Redux1Wrap />
           <Redux2Wrap increaseVal={1} />
+          <Redux3Wrap />
         </div>
       )
     }

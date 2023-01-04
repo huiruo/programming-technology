@@ -1663,7 +1663,6 @@
     return dispatcher.useId();
   }
   function useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot) {
-    console.log('useSyncExternalStore(subscribe, getSnapshot==>')
     var dispatcher = resolveDispatcher();
     return dispatcher.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   }
@@ -3316,17 +3315,15 @@
 
   // react-redux start 
   // react-redux start 
-
-  // console.log('hoistNonReactStatics 2:', testFn)
+  /*
   function addScript(url) {
     console.log('addScript==>')
     document.write(`<script language=javascript src='${url}'></script>`);
   }
-  // addScript('./hoist-non-react-statics.js')
-  // console.log('=react-redux加载3=hoistNonReactStatics:', HoistNonReactStatics)
+  addScript('./hoist-non-react-statics.js')
+  */
 
   // 方法1
-  console.log('=react-redux加载方法1=_extends:')
   const _excluded = ["reactReduxForwardedRef"];
   function _extends() {
     _extends = Object.assign ? Object.assign.bind() : function (target) {
@@ -3344,7 +3341,6 @@
   }
 
   // 方法2
-  console.log('=react-redux加载方法2=_objectWithoutPropertiesLoose:')
   function _objectWithoutPropertiesLoose(source, excluded) {
     if (source == null) return {};
     var target = {};
@@ -3357,14 +3353,6 @@
     }
     return target;
   }
-
-  // addScript('./react.development18.js')
-  // addScript('./react-dom.development18.js')
-  // console.log('=react-redux加载4=react:', React)
-  // const { useMemo } = React
-  // console.log('=react-redux加载5=ReactDOM:', ReactDOM)
-  // console.log('=react-redux加载5=useMemo:', useMemo)
-  // // console.log('=react-redux加载4=react:', React)
 
   function strictEqual(a, b) {
     return a === b;
@@ -3607,6 +3595,8 @@
     let dispatchProps;
     let mergedProps;
 
+    console.log('%c=pureFinalPropsSelectorFactory=mapStateToProps、mapDispatchToProps、mergeProps是会返回各自最终值的函数', 'color:yellow')
+
     function handleFirstCall(firstState, firstOwnProps) {
       state = firstState;
       ownProps = firstOwnProps;
@@ -3614,10 +3604,12 @@
       dispatchProps = mapDispatchToProps(dispatch, ownProps);
       mergedProps = mergeProps(stateProps, dispatchProps, ownProps);
       hasRunAtLeastOnce = true;
+      console.log('=react-redux=pureFinalPropsSelectorFactory=handleFirstCall')
       return mergedProps;
     }
 
     function handleNewPropsAndNewState() {
+      console.log('=react-redux=pureFinalPropsSelectorFactory=handleNewPropsAndNewState')
       stateProps = mapStateToProps(state, ownProps);
       if (mapDispatchToProps.dependsOnOwnProps) dispatchProps = mapDispatchToProps(dispatch, ownProps);
       mergedProps = mergeProps(stateProps, dispatchProps, ownProps);
@@ -3625,6 +3617,7 @@
     }
 
     function handleNewProps() {
+      console.log('=react-redux=pureFinalPropsSelectorFactory=handleNewProps')
       if (mapStateToProps.dependsOnOwnProps) stateProps = mapStateToProps(state, ownProps);
       if (mapDispatchToProps.dependsOnOwnProps) dispatchProps = mapDispatchToProps(dispatch, ownProps);
       mergedProps = mergeProps(stateProps, dispatchProps, ownProps);
@@ -3632,6 +3625,7 @@
     }
 
     function handleNewState() {
+      console.log('=react-redux=pureFinalPropsSelectorFactory=handleNewState')
       const nextStateProps = mapStateToProps(state, ownProps);
       const statePropsChanged = !areStatePropsEqual(nextStateProps, stateProps);
       stateProps = nextStateProps;
@@ -3640,6 +3634,7 @@
     }
 
     function handleSubsequentCalls(nextState, nextOwnProps) {
+      console.log('=react-redux=pureFinalPropsSelectorFactory=handleSubsequentCalls')
       const propsChanged = !areOwnPropsEqual(nextOwnProps, ownProps);
       const stateChanged = !areStatesEqual(nextState, state, nextOwnProps, ownProps);
       state = nextState;
@@ -4203,8 +4198,11 @@
     let didUnsubscribe = false;
     let lastThrownError = null; // We'll run this callback every time a store subscription update propagates to this component
 
+
     const checkForUpdates = () => {
+      console.log('%c=react-redux=checkForUpdates=开始执行', 'color:red')
       if (didUnsubscribe || !isMounted.current) {
+        console.log('%c=react-redux=checkForUpdates=1:return', 'color:red')
         // Don't run stale listeners.
         // Redux doesn't guarantee unsubscriptions happen until next dispatch.
         return;
@@ -4227,9 +4225,10 @@
         lastThrownError = null;
       } // If the child props haven't changed, nothing to do here - cascade the subscription update
 
-
+      console.log('%c=react-redux=checkForUpdates=2:对比：', 'color:red', { newChildProps, old: lastChildProps.current })
       if (newChildProps === lastChildProps.current) {
         if (!renderIsScheduled.current) {
+          console.log('%c=react-redux=checkForUpdates=2:不执行更新，notifyNestedSubs()', 'color:red')
           notifyNestedSubs();
         }
       } else {
@@ -4242,6 +4241,7 @@
         renderIsScheduled.current = true; // TODO This is hacky and not how `uSES` is meant to be used
         // Trigger the React `useSyncExternalStore` subscriber
 
+        console.log('%c=react-redux=checkForUpdates=3:additionalSubscribeListener()执行更新', 'color:red')
         additionalSubscribeListener();
       }
     }; // Actually subscribe to the nearest connected ancestor (or store)
@@ -4251,6 +4251,8 @@
     subscription.trySubscribe(); // Pull data from the store after first render in case the store has
     // changed since we began.
 
+    console.log('%c=react-redux=ConnectFunction订阅了更新subscribeUpdates', 'color:chartreuse')
+    console.log('%c=react-redux=ConnectFunction=subscribeUpdates调用checkForUpdates', 'color:chartreuse')
     checkForUpdates();
 
     const unsubscribeWrapper = () => {
@@ -4291,14 +4293,13 @@
       warning('The `pure` option has been removed. `connect` is now always a "pure/memoized" component');
     }
     // }
-
-    console.log('=源码=conect 1:', connect)
-
     const Context = context;
     const initMapStateToProps = mapStateToPropsFactory(mapStateToProps);
     const initMapDispatchToProps = mapDispatchToPropsFactory(mapDispatchToProps);
     const initMergeProps = mergePropsFactory(mergeProps);
     const shouldHandleStateChanges = Boolean(mapStateToProps);
+
+    console.log('%c=react-redux=connect执行wrapWithConnect', 'color:chartreuse')
 
     const wrapWithConnect = WrappedComponent => {
       // if (process.env.NODE_ENV !== 'production' && !isValidElementType(WrappedComponent)) {
@@ -4323,7 +4324,10 @@
         areMergedPropsEqual
       };
 
+      console.log('%c=react-redux=connect返回selectorFactoryOptions', 'color:chartreuse', selectorFactoryOptions)
+
       function ConnectFunction(props) {
+        console.log('%c=react-redux=ConnectFunction正式执行', 'color:chartreuse')
         const [propsContext, reactReduxForwardedRef, wrapperProps] = useMemo(() => {
           // Distinguish between actual "data" props that were passed to the wrapper component,
           // and values needed to control behavior (forwarded refs, alternate context instances).
@@ -4362,6 +4366,7 @@
           return defaultSelectorFactory(store.dispatch, selectorFactoryOptions);
         }, [store]);
         const [subscription, notifyNestedSubs] = useMemo(() => {
+          console.log('=react-redux=ConnectFunction=阅的重点')
           if (!shouldHandleStateChanges) return NO_SUBSCRIPTION_ARRAY; // This Subscription's source should match where store came from: props vs. context. A component
           // connected to the store via props shouldn't use subscription from context, or vice versa.
 
@@ -4428,6 +4433,7 @@
         // just useEffect instead to avoid the warning, since neither will run anyway.
 
         const subscribeForReact = useMemo(() => {
+          console.log('=react-redux=这里订阅了更新，并且返回一个注销订阅的函数')
           const subscribe = reactListener => {
             if (!subscription) {
               return () => { };
@@ -4443,8 +4449,7 @@
         let actualChildProps;
 
         try {
-          console.log("actualChildProps = useSyncExternalStore_connect1:", useSyncExternalStore)
-          console.log("actualChildProps = useSyncExternalStore_connect2:", useSyncExternalStore_connect)
+          // console.log("actualChildProps = useSyncExternalStore_connect1:", useSyncExternalStore)
           actualChildProps = useSyncExternalStore( // TODO We're passing through a big wrapper that does a bunch of extra side effects besides subscribing
             // actualChildProps = useSyncExternalStore_connect( // TODO We're passing through a big wrapper that does a bunch of extra side effects besides subscribing
             subscribeForReact, // TODO This is incredibly hacky. We've already processed the store update and calculated new child props,
@@ -4501,6 +4506,8 @@
 
       if (forwardRef) {
         const _forwarded = React.forwardRef(function forwardConnectRef(props, ref) {
+
+          console.log('%c=react-redux=ConnectFunction注入ConnectFunction1=createElement(Connect)', 'color:chartreuse')
           // @ts-ignore
           return /*#__PURE__*/React.createElement(Connect, _extends({}, props, {
             reactReduxForwardedRef: ref
@@ -4515,9 +4522,10 @@
       }
 
       // return hoistStatics(Connect, WrappedComponent);
+      console.log('%c=react-redux=ConnectFunction注入ConnectFunction2=hoistNonReactStatics(Connect', 'color:chartreuse')
       return hoistNonReactStatics(Connect, WrappedComponent);
     };
-
+    console.log('%c=react-redux=Connect函数返回', 'color:chartreuse', { wrapWithConnect })
     return wrapWithConnect;
   }
   // connect end
@@ -4685,6 +4693,18 @@
     return value;
   }
 
+  /*
+  function createDispatchHook(context = ReactReduxContext) {
+    const useStore = // @ts-ignore
+    context === ReactReduxContext ? useDefaultStore : createStoreHook(context);
+    return function useDispatch() {
+      const store = useStore(); // @ts-ignore
+  
+      return store.dispatch;
+    };
+  }
+  */
+
   const useSelector = /*#__PURE__*/createSelectorHook();
   // hook end
   // hook end
@@ -4705,18 +4725,23 @@
   // Provider
   // const ReactReduxContext = /*#__PURE__*/createContext(null);
   function createListenerCollection() {
+    // 对listener的收集，listener是一个双向链表
     const batch = getBatch();
     let first = null;
     let last = null;
+
+    console.log('%c=react-redux=createListener创建listeners对象', 'color:cyan')
+
     return {
       clear() {
         first = null;
         last = null;
       },
-
+      // 触发链表所有节点的回调
       notify() {
         batch(() => {
           let listener = first;
+          console.log('%c=react-redux=notify触发链表所有节点的回调', 'color:blueviolet')
 
           while (listener) {
             listener.callback();
@@ -4724,7 +4749,7 @@
           }
         });
       },
-
+      // 以数组的形式返回所有节点
       get() {
         let listeners = [];
         let listener = first;
@@ -4733,37 +4758,47 @@
           listeners.push(listener);
           listener = listener.next;
         }
+        console.log('=react-redux=以数组的形式返回所有节点', 'color:blueviolet')
 
         return listeners;
       },
 
+      // 用于向 listeners 链表添加一个订阅以及返回一个注销订阅的函数，涉及链表的增删操作
       subscribe(callback) {
+        console.log('=react-redux=subscribe向 listeners 链表添加一个订阅以及返回一个注销订阅的函数，涉及链表的增删操作', 'color:blueviolet')
         let isSubscribed = true;
+        // 创建一个链表节点
         let listener = last = {
           callback,
           next: null,
           prev: last
         };
-
+        // 如果链表已经有了节点
         if (listener.prev) {
           listener.prev.next = listener;
         } else {
+          // 如果链表还没有节点，它则是首节点
           first = listener;
         }
-
+        // unsubscribe就是个双向链表的删除指定节点操作
         return function unsubscribe() {
+          // 阻止无意义执行
           if (!isSubscribed || first === null) return;
           isSubscribed = false;
-
+          // 如果添加的这个节点已经有了后续节点
           if (listener.next) {
             listener.next.prev = listener.prev;
           } else {
+            // 没有则说明该节点是最后一个，将prev节点作为last节点
             last = listener.prev;
           }
 
+          // 如果有前节点prev
           if (listener.prev) {
+            // prev的next应该为该节点的next
             listener.prev.next = listener.next;
           } else {
+            // 否则说明该节点是第一个，把它的next给first
             first = listener.next;
           }
         };
@@ -4789,33 +4824,39 @@
   function createSubscription(store, parentSub) {
     let unsubscribe;
     let listeners = nullListeners;
-
+    // 收集订阅
     function addNestedSub(listener) {
       trySubscribe();
-      return listeners.subscribe(listener);
+      const listenersRes = listeners.subscribe(listener)
+      console.log('=react-redux=addNestedSub收集订阅', listenersRes)
+      return listenersRes;
     }
-
+    // 通知订阅
     function notifyNestedSubs() {
+      console.log('=react-redux=notifyNestedSubs调用listeners.notify()通知订阅')
       listeners.notify();
     }
-
+    // 自己的订阅回调
     function handleChangeWrapper() {
       if (subscription.onStateChange) {
+        console.log('=react-redux=handleChangeWrapper,自己的订阅回调')
         subscription.onStateChange();
       }
     }
-
+    // 判断自己是否被订阅
     function isSubscribed() {
+      console.log('=react-redux=判断自己是否被订阅')
       return Boolean(unsubscribe);
     }
-
+    // 让自己被父级订阅
     function trySubscribe() {
       if (!unsubscribe) {
         unsubscribe = parentSub ? parentSub.addNestedSub(handleChangeWrapper) : store.subscribe(handleChangeWrapper);
+        console.log('%c=react-redux=createSubscription调用createListenerCollectionlisteners对象', 'color:cyan')
         listeners = createListenerCollection();
       }
     }
-
+    // 从父级注销自己的订阅
     function tryUnsubscribe() {
       if (unsubscribe) {
         unsubscribe();
@@ -4824,6 +4865,8 @@
         listeners = nullListeners;
       }
     }
+
+    console.log('%c=react-redux=调用createSubscription参数store, parentSub', 'color:red')
 
     const subscription = {
       addNestedSub,
@@ -4838,7 +4881,9 @@
   }
 
   const canUseDOM = !!(typeof window !== 'undefined' && typeof window.document !== 'undefined' && typeof window.document.createElement !== 'undefined');
+
   const useIsomorphicLayoutEffect = canUseDOM ? useLayoutEffect : useEffect;
+
   function Provider({
     store,
     context,
@@ -4846,35 +4891,60 @@
     serverState
   }) {
     const contextValue = useMemo(() => {
+      console.log('%c=react-redux=Provider=调用createSubscription', 'color:yellow')
       const subscription = createSubscription(store);
+
+      console.log('%c=react-redux=Provider=contextValue生成了一个用于context透传的对象，包含redux store、subscription,那具体这个组件想往下面透传什么呢?', 'color:yellow', {
+        store, subscription, getServerState: serverState ? () => serverState : undefined
+      })
+
       return {
         store,
         subscription,
         getServerState: serverState ? () => serverState : undefined
       };
     }, [store, serverState]);
+
+    // 获取一次当前的redux state，因为后续子节点的渲染可能会修改state，所以它叫previousState
     const previousState = useMemo(() => store.getState(), [store]);
+
     useIsomorphicLayoutEffect(() => {
       const {
         subscription
       } = contextValue;
+      // 设置subscription的onStateChange方法
       subscription.onStateChange = subscription.notifyNestedSubs;
+      // 将subscription的更新回调订阅给父级，这里会订阅给redux
       subscription.trySubscribe();
 
+      console.log('%c=react-redux=Provider=useIsomorphicLayoutEffect会在最后组件commit被调用', 'color:yellow')
+
+      // 判断state经过渲染后是否变化，如果变化则触发所有子订阅更新
       if (previousState !== store.getState()) {
         subscription.notifyNestedSubs();
       }
 
+      // 组件卸载时的注销操作
       return () => {
         subscription.tryUnsubscribe();
         subscription.onStateChange = undefined;
       };
     }, [contextValue, previousState]);
+
     const Context = context || ReactReduxContext; // @ts-ignore 'AnyAction' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype
 
-    return /*#__PURE__*/React.createElement(Context.Provider, {
+    console.log('%c=react-redux=Provider=调用React.createElement参数Context.Provider:', 'color:yellow', Context.Provider, {
+      value: contextValue
+    }, 'children:', children)
+
+    // 最终Provider组件只是为了将contextValue透传下去，组件UI完全使用children
+    const providerRes = /*#__PURE__*/React.createElement(Context.Provider, {
       value: contextValue
     }, children);
+
+    console.log('%c=Provider=调用React.createElement 返回一个组件:', 'color:yellow', providerRes)
+
+    return providerRes
   }
   // Provider end
   // Provider end
