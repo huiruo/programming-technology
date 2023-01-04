@@ -109,37 +109,6 @@ createStore接受一个reducer作为参数，以后每当store.dispatch一个新
 * Reducer : 见实例
 
 
-## 2-2.Store
-store:首先要创建一个对象store，这个对象有各种方法，用来让外界获取Redux的数据（store.getState），或者让外界来修改Redux中的数据（store.dispatch）
-
-在 reducer 纯函数中不允许直接修改 state 对象，每次都应返回一个新的 state。原生 JavaScript 中我们要时刻记得使用 ES6 的扩展符 ... 
-
-或Object.assign() 函数创建一个新 state，但是仍然是一个浅 copy，遇到复杂的数据结构我们还需要做深拷贝返回一个新的状态，总之你要保证每次都返回一个新对象，一方面深拷贝会造成性能损耗、另一方面难免会忘记从而直接修改原来的 state。
-
-### reducer 纯函数要保证以下两点：
-reducer 根据 action 的响应决定怎么去修改 store 中的 state。编写 reducer 函数没那么复杂，倒要切记该函数始终为一个纯函数，应避免直接修改state。
-
-1. 同样的参数，函数的返回结果也总是相同的。例如，根据上一个 state 和 action 也会返回一个新的 state，类似这样的结构(previousState, action) => newState。
-
-2. 函数执行没有任何副作用，不受外部执行环境的影响。例如，不会有任何的接口调用或修改外部对象。
-
-
-## 2-1.Action
-Action表示应用中的各类动作或操作，不同的操作会改变应用相应的state状态，说白了就是一个带type属性的对象
-```javascript
-import { Dispatch } from 'redux';
-import {
-  LOGIN_SUCCESS
-} from './actiontypes';
-
-export const loginAction = (data:string) => (dispatch: Dispatch) => {
-  dispatch({
-      type: LOGIN_SUCCESS,
-      payload: data
-  });
-};
-```
-
 通过react-redux做连接，使用Provider：从最外部封装了整个应用，并向connect模块传递store。
 Connect： 
 1. 包装原组件，将state和action通过props的方式传入到原组件内部。
@@ -160,108 +129,27 @@ connect是真正的重点，它是一个科里化函数，意思是先接受两�
 
 5. mapStateToProps：构建好Redux系统的时候，它会被自动初始化，但是你的React组件并不知道它的存在，因此你需要分拣出你需要的Redux状态，所以你需要绑定一个函数，它的参数是state，简单返回你关心的几个值。
 
-## 实战：
+
+### reducer 纯函数要保证以下两点：
+reducer 根据 action 的响应决定怎么去修改 store 中的 state。编写 reducer 函数没那么复杂，倒要切记该函数始终为一个纯函数，应避免直接修改state。
+
+1. 同样的参数，函数的返回结果也总是相同的。例如，根据上一个 state 和 action 也会返回一个新的 state，类似这样的结构(previousState, action) => newState。
+
+2. 函数执行没有任何副作用，不受外部执行环境的影响。例如，不会有任何的接口调用或修改外部对象。
+
+
+## 2-2.Store
+store:首先要创建一个对象store，这个对象有各种方法，用来让外界获取Redux的数据（store.getState），或者让外界来修改Redux中的数据（store.dispatch）
+
+在 reducer 纯函数中不允许直接修改 state 对象，每次都应返回一个新的 state。原生 JavaScript 中我们要时刻记得使用 ES6 的扩展符 ... 
+
+或Object.assign() 函数创建一个新 state，但是仍然是一个浅 copy，遇到复杂的数据结构我们还需要做深拷贝返回一个新的状态，总之你要保证每次都返回一个新对象，一方面深拷贝会造成性能损耗、另一方面难免会忘记从而直接修改原来的 state。
+
+
+
+## 2-1.Action
+Action表示应用中的各类动作或操作，不同的操作会改变应用相应的state状态，说白了就是一个带type属性的对象
 ```javascript
-// store:index.ts
-import { createStore, combineReducers, applyMiddleware } from 'redux';
-import logger from 'redux-logger';
-import thunk from 'redux-thunk';
-import userStore from './user.store';
-import { composeWithDevTools } from 'redux-devtools-extension';
-
-const reducer = combineReducers({
-  userStore,
-});
-
-const enhancers = process.env.APP_ENV === 'dev' ? composeWithDevTools(
-  applyMiddleware(thunk, logger)
-) : applyMiddleware(thunk);
-
-const store = createStore(reducer, enhancers);
-
-export default store;
-
-
-// user.store.ts 是一个reducer
-import { sessionStorage } from "../utils/storage";
-import { removeTiemManualToken, setTiemManualToken } from "@/utils/auth";
-import { IAction, IUser } from "@/utils/types";
-import { LOGIN_SUCCESS, LOGOUT } from "./actions/actiontypes";
-
-export interface IUserState {
-  user?: IUser;
-  token?: string;
-}
-
-const initUserState: IUserState = sessionStorage.getItem("user") || {};
-
-const userStore = (state: IUserState = initUserState, action: IAction) => {
-  const { payload, type } = action;
-
-  switch (type) {
-    case LOGIN_SUCCESS:
-      setTiemManualToken(payload);
-      const userState = { ...state, token: action.payload };
-      // 注意这里调用了外部，违背纯函数的原则
-      sessionStorage.setItem("user", userState);
-
-      return userState;
-    case LOGOUT:
-      // 注意这里调用了外部，违背纯函数的原则
-      removeTiemManualToken();
-      sessionStorage.removeItem("user");
-
-      return {};
-    default:
-      return state;
-  }
-};
-
-export default userStore;
-```
-
-组件内使用,mapStateToProps 使用
-```javaScript
-const AuthRoute: FC<IAuthRoute> = (props) => {
-  const { children, token } = props;
-  const logined: boolean = token ? true : false;
-  console.log('=====AuthRouteRender=====', logined);
-
-  return (logined ? <>{children}</> : (
-    <Navigate
-      replace={true}
-      to='/login'
-      state={{ from: `${location.pathname}${location.search}` }}
-    />
-  ));
-};
-
-const mapStateToProps = (state: any) => {
-  return {
-    token: state.userStore.token
-  };
-};
-
-export default connect(mapStateToProps, null)(AuthRoute);
-```
-
-mapDispatchToProps
-```javaScript
-// web\src\pages\login\login.tsx
-import { loginAction } from '@/stores/actions/userActions';
-const Login = (props: LonginProps) => {
-  // ...
-}
-const mapDispatchToProps = (dispatch: any) => {
-
-  return {
-    loginAction: (data: string) => dispatch(loginAction(data)),
-  };
-};
-
-export default connect(null, mapDispatchToProps)(Login);
-
-// userActions.ts
 import { Dispatch } from 'redux';
 import {
   LOGIN_SUCCESS
@@ -275,7 +163,14 @@ export const loginAction = (data:string) => (dispatch: Dispatch) => {
 };
 ```
 
-## redux-thunk 和 redux-saga区别
+## 实战：
+查看实例代码
+```javaScript
+react18-test
+redux 模块
+```
+
+# redux-thunk 和 redux-saga区别
 概念
 Redux Thunk:Redux 的异步处理中间件
 Dva:一个基于redux 和 redux-saga 的数据流方案
@@ -379,6 +274,106 @@ export default function* watchFetchSaga(){
 
 ### 总结
 saga 自己基本上完全弄了一套 asyc 的事件监听机制。虽然好的一方面是将来可以扩展成 worker 相关的模块，甚至可以做到 multiple threads 同时执行，但代码量大大增加。如果只是普通的 application，用 redux-thunk 足够
+
+# redux 源码
+```json
+{
+  "react-redux": "^8.0.5",
+  "redux": "^4.2.0",
+  "redux-thunk": "^2.4.2",
+  "react": "^18.2.0",
+}
+```
+
+react 中能更新 redux 的 store，并能监听 store 的变化并通知 react 的相关组件更新，从而能让 react 将状态放在外部管理（有利于 model 集中管理，能利用 redux 单项数据流架构，数据流易预测易维护，也极大的方便了任意层级组件间通信
+
+### 问题
+1. react-redux 是如何关联起 redux 和 react 的？
+2. 究竟是 redux 性能不好还是 react-redux 性能不好？
+3. 具体不好在哪里？
+4. 能不能避免？
+
+https://segmentfault.com/a/1190000041472179
+
+react-redux 是如何关联起 redux 和 react 的？这个问题倒是有不少源码解析的文章，我曾经看过一篇很详细的，不过很可惜是老版本的，还在用 class component，所以当时的我决定自己去看源码。当时属于是粗读:
+
+读完之后的简单总结就是 Provider 中有 Subscription 实例，connect 这个高阶组件中也有 Subscription 实例，并且有负责自身更新的 hooks: useReducer，useReducer 的 dispatch 会被注册进 Subscription 的 listeners，listeners 中有一个方法 notify 会遍历调用每个 listener，notify 会被注册给 redux 的 subscribe，从而 redux 的 state 更新后会通知给所有 connect 组件，当然每个 connect 都有检查自己是否需要更新的方法 checkForUpdates 来避免不必要的更新，具体细节就不说了。
+
+总之，当时我只粗读了整体逻辑，但是可以解答我上面的问题了：
+
+1. react-redux 确实有可能性能不好。而至于 redux，每次 dispatch 都会让 state 去每个 reducer 走一遍，并且为了保证数据 immutable 也会有额外的创建复制开销。不过 mutable 阵营的库如果频繁修改对象也会导致 V8 的对象内存结构由顺序结构变成字典结构，查询速度降低，以及内联缓存变得高度超态，这点上 immutable 算拉回一点差距。不过为了一个清晰可靠的数据流架构，这种级别的开销在大部分场景算是值得，甚至忽略不计。
+2. react-redux 性能具体不好在哪里？因为每个 connect 不管需不需要更新都会被通知一次，开发者定义的 selector 都会被调用一遍甚至多遍，如果 selector 逻辑昂贵，还是会比较消耗性能的。
+
+3. 那么 react-redux 一定会性能不好吗？不一定，根据上面的分析，如果你的 selector 逻辑简单（或者将复杂派生计算都放在 redux 的 reducer 里，但是这样可能不利于构建一个合理的 model），connect 用的不多，那么性能并不会被 mobx 这样的细粒度更新拉开太多。也就是说 selector 里业务计算不复杂、使用全局状态管理的组件不多的情况下，完全不会有可感知的性能问题。那如果 selector 里面的业务计算复杂怎么办呢？能不能完全避免呢？当然可以，你可以用 reselect 这个库，它会缓存 selector 的结果，只有原始数据变化时才会重新计算派生数据。
+
+## 前言
+https://segmentfault.com/a/1190000041472179
+
+### "Stale Props" and "Zombie Children"（过期 Props 和僵尸子节点问题）
+自 v7.1.0 版本发布以后，react-redux 就可以使用 hooks api 了，官方也推荐使用 hooks 作为组件中的默认使用方法。但是有一些边缘情况可能会发生，这篇文档就是让我们意识到这些事的。
+
+react-redux 实现中最难的地方之一就是：如果你的 mapStateToProps 是(state, ownProps)这样使用的，它将会每次被传入『最新的』props。一直到版本 4 都一直有边缘场景下的重复的 bug 被报告，比如：有一个列表 item 的数据被删除了，mapStateToProps 里面就报错了。
+
+从版本 5 开始，react-redux 试图保证 ownProps 的一致性。在版本 7 里面，每个 connect()内部都有一个自定义的 Subscription 类，从而当 connect 里面又有 connect，它能形成一个嵌套的结构。这确保了树中更低层的 connect 组件只会在离它最近的祖先 connect 组件更新后才会接受到来自 store 的更新。然而，这个实现依赖于每个 connect()实例里面覆写了内部 React Context 的一部分（subscription 那部分），用它自身的 Subscription 实例用于嵌套。然后用这个新的 React Context ( \<ReactReduxContext.Provider\> ) 渲染子节点。
+
+如果用 hooks，没有办法渲染一个 context.Provider，这就代表它不能让 subscriptions 有嵌套的结构。因为这一点，"stale props" 和 "zombie child" 问题可能在『用 hooks 代替 connect』 的应用里重新发生。
+
+
+具体来说，"stale props" 会出现在这种场景：
+* selector 函数会根据这个组件的 props 计算出数据
+* 父组件会重新 render，并传给这个组件新的 props
+* 但是这个组件会在 props 更新之前就执行 selector（译者注：因为子组件的来自 store 的更新是在 useLayoutEffect/useEffect 中注册的，所以子组件先于父组件注册，redux 触发订阅会先触发子组件的更新方法）
+
+这种旧的 props 和最新 store state 算出来的结果，很有可能是错误的，甚至会引起报错。
+
+"Zombie child"具体是指在以下场景：
+* 多个嵌套的 connect 组件 mounted，子组件比父组件更早的注册到 store 上
+* 一个 action dispatch 了在 store 里删除数据的行为，比如一个 todo list 中的 item
+* 父组件在渲染的时候就会少一个 item 子组件
+* 但是，因为子组件是先被订阅的，它的 subscription 先于父组件。当它计算一个基于 store 和 props 计算的值时，部分数据可能已经不存在了，如果计算逻辑不注意的话就会报错。
+
+useSelector()试图这样解决这个问题：它会捕获所有来自 store 更新导致的 selector 计算中的报错，当错误发生时，组件会强制更新，这时 selector 会再次执行。这个需要 selector 是个纯函数并且你没有逻辑依赖 selector 抛出错误。
+
+如果你更喜欢自己处理，这里有一个可能有用的事项能帮助你在使用 useSelector() 时避免这些问题
+
+* 不要在 selector 的计算中依赖 props
+* 如果在：你必须要依赖 props 计算并且 props 将来可能发生变化、依赖的 store 数据可能会被删除，这两种情况下时，你要防备性的写 selector。不要直接像 state.todos[props.id].name 这样读取值，而是先读取 state.todos[props.id]，验证它是否存在再读取 todo.name
+因为 connect 向 context provider 增加了必要的 Subscription，它会延迟执行子 subscriptions 直到这个 connected 组件 re-rendered。组件树中如果有 connected 组件在使用 useSelector 的组件的上层，也可以避免这个问题，因为父 connect 有和 hooks 组件同样的 store 更新（译者注：父 connect 组件更新后才会更新子 hooks 组件，同时 connect 组件的更新会带动子节点更新，被删除的节点在此次父组件的更新中已经卸载了：因为上文中说 state.todos[props.id].name ，说明 hooks 组件是上层通过 ids 遍历出来的。于是后续来自 store 的子 hooks 组件更新不会有被删除的）
+
+以上的解释可能让大家明白了 "Stale Props" 和 "Zombie Children" 问题是如何产生的以及 react-redux 大概是怎么解决的，就是通过子代 connect 的更新被嵌套收集到父级 connect，每次 redux 更新并不是遍历更新所有 connect，而是父级先更新，然后子代由父级更新后才触发更新。但是似乎 hooks 的出现让它并不能完美解决问题了，而且具体这些设计的细节也没有说到。这部分的疑惑和缺失就是我准备再读 react-redux 源码的原因。
+
+
+## 宏观设计
+总体的抽象设计，让大家心中带着设计蓝图去读其中的细节，否则只看细节很难让它们之间串联起来明白它们是如何共同协作完成整个功能的。
+React-Redux 的 Provider 和 connect 都提供了自己的贯穿子树的 context，它们的所有的子节点都可以拿到它们，并会将自己的更新方法交给它们。最终形成了根 <-- 父 <-- 子这样的收集顺序。根收集的更新方法会由 redux 触发，父收集的更新方法在父更新后再更新，于是保证了父节点被 redux 更新后子节点才更新的顺序。
+
+![](./img-react/redux-总览.png)
+
+
+## 1. 从react-redux常用的 api 切入
+入口就是src/index.ts
+```javaScript
+import { useSyncExternalStore } from 'use-sync-external-store/shim'
+import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/shim/with-selector'
+
+import { unstable_batchedUpdates as batch } from './utils/reactBatchedUpdates'
+import { setBatch } from './utils/batch'
+
+import { initializeUseSelector } from './hooks/useSelector'
+import { initializeConnect } from './components/connect'
+
+initializeUseSelector(useSyncExternalStoreWithSelector)
+initializeConnect(useSyncExternalStore)
+
+// Enable batched updates in our subscriptions for use
+// with standard React renderers (ReactDOM, React Native)
+setBatch(batch)
+
+export { batch }
+
+export * from './exports'
+```
+
 
 # mobx
 响应式依赖状态

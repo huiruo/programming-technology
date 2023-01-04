@@ -1,5 +1,19 @@
 
+## react 中的源码，可见是执行一次
+```javaScript
+do {
+  try {
+    console.log('renderRootSync--->', root);
+    workLoopSync();
+    break;
+  } catch (thrownValue) {
+    handleError(root, thrownValue);
+  }
+} while (true);
+```
 
+
+## 基础使用
 ```javaScript
 let result = '';
 let i = 0;
@@ -20,19 +34,6 @@ do {
    console.log('result:',result)
    break
 } while (true); // 执行1次
-```
-
-## react 中的源码，可见是执行一次
-```javaScript
-do {
-  try {
-    console.log('renderRootSync--->', root);
-    workLoopSync();
-    break;
-  } catch (thrownValue) {
-    handleError(root, thrownValue);
-  }
-} while (true);
 ```
 
 
