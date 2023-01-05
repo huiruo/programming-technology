@@ -36,10 +36,13 @@
       },
       methods: {
         onClickText() {
-          console.log('test:', this, '-', this.refData)
+          // console.log('test:', this, '-', this.refData)
           this.msg = '努力'
           this.showDiv = !this.showDiv
           this.info.msg2 = this.showDiv ? '直接点' : '其他选择'
+          nextTick(() => {
+            console.log('--nextTick--', this.showDiv, this.msg);
+          })
         }
       },
 

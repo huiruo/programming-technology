@@ -519,7 +519,9 @@ var Vue = (function (exports) {
     return new EffectScope(detached);
   }
   function recordEffectScope(effect, scope = activeEffectScope) {
+    console.log('%c=队列2', 'color:black')
     if (scope && scope.active) {
+      console.log('%c=队列3', 'color:black')
       scope.effects.push(effect);
     }
   }
@@ -849,6 +851,7 @@ var Vue = (function (exports) {
       // 实际触发更新的地方
       if (effect.scheduler) {
         console.log('%c触发更新:1,triggerEffect调用effect.scheduler', 'color:chartreuse')
+        console.log('%c=队列4:triggerEffect调用effect.scheduler()', 'color:black', effect.scheduler)
         effect.scheduler();
       }
       else {
@@ -1932,6 +1935,7 @@ var Vue = (function (exports) {
     // if the job is a watch() callback, the search will start with a +1 index to
     // allow it recursively trigger itself - it is the user's responsibility to
     // ensure it doesn't end up in an infinite loop.
+    console.log('%c=队列5', 'color:black')
     if (!queue.length ||
       !queue.includes(job, isFlushing && job.allowRecurse ? flushIndex + 1 : flushIndex)) {
       if (job.id == null) {
@@ -1940,12 +1944,14 @@ var Vue = (function (exports) {
       else {
         queue.splice(findInsertionIndex(job.id), 0, job);
       }
+      console.log('%c=队列5-1=调用queueFlush', 'color:black')
       queueFlush();
     }
   }
   function queueFlush() {
     if (!isFlushing && !isFlushPending) {
       isFlushPending = true;
+      console.log('%c=队列6-queueFlush', 'color:black', { flushJobs })
       currentFlushPromise = resolvedPromise.then(flushJobs);
     }
   }
@@ -2024,6 +2030,7 @@ var Vue = (function (exports) {
     return diff;
   };
   function flushJobs(seen) {
+    console.log('%c=队列7-flushJobs', 'color:black')
     isFlushPending = false;
     isFlushing = true;
     {
@@ -2559,9 +2566,9 @@ var Vue = (function (exports) {
         // withProxy is a proxy with a different `has` trap only for
         // runtime-compiled render functions using `with` block.
         const proxyToUse = withProxy || proxy;
-        console.log('vnode-构建:start-->调用render函数', { render })
+        console.log('vnode-构建:start-->调用Ast生成的render函数', { render })
         result = normalizeVNode(render.call(proxyToUse, proxyToUse, renderCache, props, setupState, data, ctx));
-        console.log('vnode-构建:end-->调用render返回vnode:', { result })
+        console.log('vnode-构建:end-->调用Ast生成的render函数返回vnode:', { result })
         fallthroughAttrs = attrs;
       }
       else {
@@ -6822,7 +6829,7 @@ var Vue = (function (exports) {
         hostSetElementText(el, vnode.children);
       }
       else if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
-        console.log('挂载dom元素mountElement:处理子节点是数组的情况')
+        console.log('%c挂载dom元素mountElement:处理子节点是数组的情况,调用mountChildren对vnode.children进行递归', 'color:magenta', vnode.children)
         mountChildren(vnode.children, el, null, parentComponent, parentSuspense, isSVG && type !== 'foreignObject', slotScopeIds, optimized);
       }
       if (dirs) {
@@ -6882,6 +6889,7 @@ var Vue = (function (exports) {
       if ((vnodeHook = props && props.onVnodeMounted) ||
         needCallTransitionHooks ||
         dirs) {
+        // console.log('%c挂载dom元素end==>queuePostRenderEffect', 'color:magenta')
         queuePostRenderEffect(() => {
           vnodeHook && invokeVNodeHook(vnodeHook, parentComponent, vnode);
           needCallTransitionHooks && transition.enter(el);
@@ -6916,6 +6924,7 @@ var Vue = (function (exports) {
         const child = (children[i] = optimized
           ? cloneIfMounted(children[i])
           : normalizeVNode(children[i]));
+        console.log('%c调用mountChildren递归调用patch', 'color:cyan')
         patch(null, child, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
       }
     };
@@ -7219,9 +7228,9 @@ var Vue = (function (exports) {
     };
     const setupRenderEffect = (instance, initialVNode, container, anchor, parentSuspense, isSVG, optimized) => {
       const componentUpdateFn = () => {
-        console.log('effect.run==>:调用componentUpdateFn组件的初始挂载和更新')
+        console.log('effect.run==>:componentUpdateFn执行中,组件的初始挂载或更新')
         if (!instance.isMounted) {
-          console.log('effect.run==>:componentUpdateFn之Mounte')
+          console.log('effect.run==>:componentUpdateFn之初始化')
           let vnodeHook;
           const { el, props } = initialVNode;
           const { bm, m, parent } = instance;
@@ -7245,7 +7254,7 @@ var Vue = (function (exports) {
               {
                 startMeasure(instance, `render`);
               }
-              console.log("effect.run==>:setupRenderEffect:1组件实例生成子树vnode")
+              console.log("effect.run==>:setupRenderEffect:1,调用renderComponentRoot组件实例生成子树vnode")
               instance.subTree = renderComponentRoot(instance);
               {
                 endMeasure(instance, `render`);
@@ -7274,7 +7283,8 @@ var Vue = (function (exports) {
             {
               startMeasure(instance, `render`);
             }
-            console.log('$ceffect.run==>执行renderComponentRoot，获取组件当前的 VNode,render会读取组件的响应式数据，这会触发依赖收集', 'color:chartreuse')
+            console.log('%ceffect.run==>调用renderComponentRoot，获取组件当前的 VNode', 'color:magenta')
+            console.log('%ceffect.run==>调用renderComponentRoot，ast 创建render函数执行时会读取组件的响应式数据，这会触发依赖收集', 'color:magenta')
             const subTree = (instance.subTree = renderComponentRoot(instance));
             {
               endMeasure(instance, `render`);
@@ -7282,13 +7292,15 @@ var Vue = (function (exports) {
             {
               startMeasure(instance, `patch`);
             }
-            console.log("effect.run==>调用patch进行组件内容的渲染,把子树挂载到container上")
+            console.log("effect.run==>创建好vnode,调用patch进行组件内容的渲染,把子树挂载到container上")
             patch(null, subTree, container, anchor, instance, parentSuspense, isSVG);
             {
               endMeasure(instance, `patch`);
             }
             initialVNode.el = subTree.el;
           }
+
+          console.log('%ceffect.run==>:调用patch进行组件渲染结束,开始处理生命周期函数', 'color:yellow')
           // mounted hook
           if (m) {
             console.log('effect.run==>:生命周期mounted')
@@ -7351,7 +7363,7 @@ var Vue = (function (exports) {
           {
             startMeasure(instance, `render`);
           }
-          console.log('$ceffect.run==>执行renderComponentRoot，获取组件最新的 VNode,render会读取组件的响应式数据，这会触发依赖收集', 'color:chartreuse')
+          console.log('$ceffect.run==>调用renderComponentRoot，获取组件最新的 VNode,render会读取组件的响应式数据，这会触发依赖收集', 'color:chartreuse')
           const nextTree = renderComponentRoot(instance);
           {
             endMeasure(instance, `render`);
@@ -7398,6 +7410,8 @@ var Vue = (function (exports) {
       };
       // create reactive effect for rendering
       console.log('依赖收集==>setupRenderEffect:3调用ReactiveEffect 创建一个副作用:', { componentUpdateFn })
+      // const queueJobRes= () => queueJob(update)
+      console.log('%c=队列1', 'color:black')
       const effect = (instance.effect = new ReactiveEffect(componentUpdateFn, () => queueJob(update), instance.scope // track it in component's effect scope
       ));
       console.log('依赖收集==>a,关键：调用effect.run()为了触发一下依赖收集')
@@ -10074,6 +10088,7 @@ var Vue = (function (exports) {
     disconnectedCallback() {
       this._connected = false;
       nextTick(() => {
+        console.log("=nextTick")
         if (!this._connected) {
           render(null, this.shadowRoot);
           this._instance = null;

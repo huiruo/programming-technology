@@ -52,7 +52,73 @@ hooks:
 export { Provider, ReactReduxContext, connect, useDispatch, createDispatchHook, useSelector, createSelectorHook, useStore, createStoreHook, shallowEqual };
 ```
 
+## 总结
+
 react 中能更新 redux 的 store，并能监听 store 的变化并通知 react 的相关组件更新，从而能让 react 将状态放在外部管理（有利于 model 集中管理，能利用 redux 单项数据流架构，数据流易预测易维护，也极大的方便了任意层级组件间通信
+![](./img-react/redux-workflow.png)
+
+### react-redux 是如何关联起 redux 和 react 的？
+Provider 中有 Subscription 实例，connect 这个高阶组件中也有 Subscription 实例，并且有负责自身更新的 hooks: useReducer，useReducer 的 dispatch 会被注册进 Subscription 的 listeners。
+
+listeners 中有一个方法 notify 会遍历调用每个 listener，notify 会被注册给 redux 的 subscribe，从而 redux 的 state 更新后会通知给所有 connect 组件，当然每个 connect 都有检查自己是否需要更新的方法 checkForUpdates 来避免不必要的更新。
+
+### redux
+1. 数据流流动很自然，因为任何 dispatch 都会导致广播，需要依据对象引用是否变化来控制更新粒度。
+```
+无副作用，可时间回溯，适合并发。
+```
+3. 如果充分利用时间回溯的特征，可以增强业务的可预测性与错误定位能力。
+4. 时间回溯代价很高，因为每次都要更新引用，除非增加代码复杂度，或使用 immutable。
+5. 时间回溯的另一个代价是 action 与 reducer 完全脱节，数据流过程需要自行脑补。原因是可回溯必然不能保证引用关系。
+6. 引入中间件，其实主要为了解决异步带来的副作用。灵活利用中间件，可以通过约定完成许多复杂的工作。
+
+### 面向对象和函数式
+mobx 和 redux 都是单向数据流，通过 action 触发全局 state 更新，然后通知视图。
+
+redux 是每次返回一个全新的状态，一般搭配实现对象 immutable 的库来用。
+
+mobx 每次都是修改的同一个状态对象，基于响应式代理，也就是 Object.defineProperty 代理 get、set 的处理，get 时把依赖收集起来，set 修改时通知所有的依赖做更新。
+
+
+redux 那种方式每次都要返回一个新的对象，虽然可以用 immutable 的库来减少创建新对象的开销，但是比起 mobx 直接修改原对象来说，开销还是大一点。
+
+而且 redux 通知依赖更新的时候是全部通知的，而 mobx 因为收集了每个属性的依赖，可以精准的通知。
+
+所以 mobx 的性能会比 redux 高一些。
+
+综上，mobx 和 redux 都是单向数据流，但是管理状态的思路上，一个是函数式的思想，通过 reducer 函数每次返回新的 state，一个是面向对象的思想，通过响应式对象来管理状态，这导致了状态组织方式上的不同(function/class)，而且 redux 创建新的 state 的开销还有通知所有依赖的开销都比 mobx 大，性能比 mobx 差一些。
+
+### mobx
+1. 数据流流动不自然，只有用到的数据才会引发绑定，局部精确更新，但免去了粒度控制烦恼。
+2. 没有时间回溯能力，因为数据只有一份引用。 
+3. 自始至终一份引用，不需要 immutable，也没有复制对象的额外开销。没有这样的烦恼，数据流动由函数调用一气呵成，便于调试。
+
+不同：
+Mobx 借助于装饰器的实现，使得代码更加简洁易懂。由于使用了可观察对象，所以 Mobx 可以做到直接修改状态，而不必像 Redux 一样编写繁琐的 actions 和 reducers。
+
+简单的概括一下，一共有这么几个步骤：
+
+1. 页面事件（生命周期、点击事件等等）触发 action 的执行。
+2. 通过 action 来修改状态。
+3. 状态更新后，computed 计算属性也会根据依赖的状态重新计算属性值。
+4. 状态更新后会触发 reaction，从而响应这次状态变化来进行一些操作（渲染组件、打印日志等等）。
+
+mobx Object.defineProperty 或者 Proxy。当 autorun 第一次执行的时候会触发依赖属性的 getter，从而收集当前函数的依赖。
+```javaScript
+const person = observable({ name: 'tom' })
+autorun(function func() {
+    console.log(person.name)
+})
+```
+在 autorun 里面:
+```javaScript
+person.watches.push(func)
+```
+当依赖属性触发 setter 的时候，就会将所有订阅了变化的函数都执行一遍，从而实现了数据响应式。
+```javaScript
+person.watches.forEach(watch => watch())
+```
+
 
 ## Provider 完整函数
 ```javaScript
@@ -579,16 +645,118 @@ store为对象时，地址不变，就不会重新render。
 解决方案，深拷贝处理
 ```
 
-react-redux 是如何关联起 redux 和 react 的？这个问题倒是有不少源码解析的文章，我曾经看过一篇很详细的，不过很可惜是老版本的，还在用 class component，所以当时的我决定自己去看源码。当时属于是粗读:
-
-读完之后的简单总结就是 Provider 中有 Subscription 实例，connect 这个高阶组件中也有 Subscription 实例，并且有负责自身更新的 hooks: useReducer，useReducer 的 dispatch 会被注册进 Subscription 的 listeners，listeners 中有一个方法 notify 会遍历调用每个 listener，notify 会被注册给 redux 的 subscribe，从而 redux 的 state 更新后会通知给所有 connect 组件，当然每个 connect 都有检查自己是否需要更新的方法 checkForUpdates 来避免不必要的更新，具体细节就不说了。
-
 总之，当时我只粗读了整体逻辑，但是可以解答我上面的问题了：
-
 1. react-redux 确实有可能性能不好。而至于 redux，每次 dispatch 都会让 state 去每个 reducer 走一遍，并且为了保证数据 immutable 也会有额外的创建复制开销。不过 mutable 阵营的库如果频繁修改对象也会导致 V8 的对象内存结构由顺序结构变成字典结构，查询速度降低，以及内联缓存变得高度超态，这点上 immutable 算拉回一点差距。不过为了一个清晰可靠的数据流架构，这种级别的开销在大部分场景算是值得，甚至忽略不计。
 2. react-redux 性能具体不好在哪里？因为每个 connect 不管需不需要更新都会被通知一次，开发者定义的 selector 都会被调用一遍甚至多遍，如果 selector 逻辑昂贵，还是会比较消耗性能的。
 
 3. 那么 react-redux 一定会性能不好吗？不一定，根据上面的分析，如果你的 selector 逻辑简单（或者将复杂派生计算都放在 redux 的 reducer 里，但是这样可能不利于构建一个合理的 model），connect 用的不多，那么性能并不会被 mobx 这样的细粒度更新拉开太多。也就是说 selector 里业务计算不复杂、使用全局状态管理的组件不多的情况下，完全不会有可感知的性能问题。那如果 selector 里面的业务计算复杂怎么办呢？能不能完全避免呢？当然可以，你可以用 reselect 这个库，它会缓存 selector 的结果，只有原始数据变化时才会重新计算派生数据。
+
+## 问题:redux-thunk 和 redux-saga区别
+概念
+Redux Thunk:Redux 的异步处理中间件
+Dva:一个基于redux 和 redux-saga 的数据流方案
+
+### redux 时异步操作出现的具体时机
+当出发一个 action 会经过中间件 middlewares，这时所有的 side effect 操作，例如调用 api 获取数据等等都将在这里完成。然后再经由 reducer 更新 state，最后传递到 view 完成 MVC 的数据流循环。
+![](./img-react/redux异步.png)
+
+## redux-thunk 解决方案
+注册插件
+```javaScript
+// Note: this API requires redux@>=3.1.0
+const store = createStore(rootReducer, applyMiddleware(thunk));
+
+ReactDOM.render(
+  <Provider store={store}>
+    <Routes />
+  </Provider>,
+  document.getElementById('root')
+);
+```
+
+Reducer 也非常简单，和原来一模一样
+```javaScript
+export default (state = defaultState, action) => {
+  switch (action.type) {
+    case REMOTE_DATA_RECEIVED:
+      return {
+        ...state,
+        data: action.data
+      };
+    default:
+      return state;
+  }
+};
+```
+
+### 不同之处在于 action
+```javaScript
+// 普通的 action
+export function toggleTodo(index) {
+  return { type: TOGGLE_TODO, index }
+}
+
+// redux-thunk 的 action 可以是一 异步的 higher order function 高阶函数
+export const fetchData = args => async (dispatch, getState) => {
+  const state = getState();
+  const url = 'https://jsonplaceholder.typicode.com/users/' + args;
+
+  try {
+    const response = await fetch(url)
+      .then(resp => {
+        return resp;
+      })
+      .then(resp => resp.json());
+
+    dispatch({
+      type: REMOTE_DATA_RECEIVED,
+      data: response
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+```
+
+## 2.redux-saga 解决方案
+### 区别:saga 使用的仍然是普通的 action
+```javaScript
+// 这个 action 将由 saga 监听，并且出发 side effect 异步加载 api 操作
+export const fetchData = () => ({
+  type:  "START_FETCH_DATA"
+});
+
+// 这个 action 将由 saga 发出
+export const fetchSuccess = data => ({
+  type: "REMOTE_DATA_RECEIVED",
+  payload: data
+});
+```
+
+接下来就是注册 saga 相关 side effect 操作。下面的文件是 fetchData.saga.js
+```javaScript
+import { takeLatest, put } from "redux-saga/effects";
+
+function* fetchDataSaga(action){
+  try {
+    const response = yield fetch(action.url);
+    const data = yield response.json()
+    yield put(fetchSuccess(data));
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export default function* watchFetchSaga(){
+  // saga 将监听此事件，takeLatest 表示仅仅只监听最新的此事件
+  yield takeLatest("START_FETCH_DATA", fetchDataSaga)
+}
+```
+
+### 总结
+saga 自己基本上完全弄了一套 async 的事件监听机制。虽然好的一方面是将来可以扩展成 worker 相关的模块，甚至可以做到 multiple threads 同时执行，但代码量大大增加。如果只是普通的 application，用 redux-thunk 足够
+
+
 
 ## 前言
 https://segmentfault.com/a/1190000041472179
@@ -1192,119 +1360,7 @@ export const loginAction = (data:string) => (dispatch: Dispatch) => {
 };
 ```
 
-## 实战：
-查看实例代码
-```javaScript
-react18-test
-redux 模块
-```
-
-# redux-thunk 和 redux-saga区别
-概念
-Redux Thunk:Redux 的异步处理中间件
-Dva:一个基于redux 和 redux-saga 的数据流方案
-
-### redux 时异步操作出现的具体时机
-当出发一个 action 会经过中间件 middlewares，这时所有的 side effect 操作，例如调用 api 获取数据等等都将在这里完成。然后再经由 reducer 更新 state，最后传递到 view 完成 MVC 的数据流循环。
-![](./img-react/redux异步.png)
-
-## redux-thunk 解决方案
-注册插件
-```javaScript
-// Note: this API requires redux@>=3.1.0
-const store = createStore(rootReducer, applyMiddleware(thunk));
-
-ReactDOM.render(
-  <Provider store={store}>
-    <Routes />
-  </Provider>,
-  document.getElementById('root')
-);
-```
-
-Reducer 也非常简单，和原来一模一样
-```javaScript
-export default (state = defaultState, action) => {
-  switch (action.type) {
-    case REMOTE_DATA_RECEIVED:
-      return {
-        ...state,
-        data: action.data
-      };
-    default:
-      return state;
-  }
-};
-```
-
-### 不同之处在于 action
-```javaScript
-// 普通的 action
-export function toggleTodo(index) {
-  return { type: TOGGLE_TODO, index }
-}
-
-// redux-thunk 的 action 可以是一 异步的 higher order function 高阶函数
-export const fetchData = args => async (dispatch, getState) => {
-  const state = getState();
-  const url = 'https://jsonplaceholder.typicode.com/users/' + args;
-
-  try {
-    const response = await fetch(url)
-      .then(resp => {
-        return resp;
-      })
-      .then(resp => resp.json());
-
-    dispatch({
-      type: REMOTE_DATA_RECEIVED,
-      data: response
-    });
-  } catch (error) {
-    console.log(error);
-  }
-};
-```
-
-## 2.redux-saga 解决方案
-### 区别:saga 使用的仍然是普通的 action
-```javaScript
-// 这个 action 将由 saga 监听，并且出发 side effect 异步加载 api 操作
-export const fetchData = () => ({
-  type:  "START_FETCH_DATA"
-});
-
-// 这个 action 将由 saga 发出
-export const fetchSuccess = data => ({
-  type: "REMOTE_DATA_RECEIVED",
-  payload: data
-});
-```
-
-接下来就是注册 saga 相关 side effect 操作。下面的文件是 fetchData.saga.js
-```javaScript
-import { takeLatest, put } from "redux-saga/effects";
-
-function* fetchDataSaga(action){
-  try {
-    const response = yield fetch(action.url);
-    const data = yield response.json()
-    yield put(fetchSuccess(data));
-  } catch (error) {
-    console.log(error);
-  }
-}
-
-export default function* watchFetchSaga(){
-  // saga 将监听此事件，takeLatest 表示仅仅只监听最新的此事件
-  yield takeLatest("START_FETCH_DATA", fetchDataSaga)
-}
-```
-
-### 总结
-saga 自己基本上完全弄了一套 asyc 的事件监听机制。虽然好的一方面是将来可以扩展成 worker 相关的模块，甚至可以做到 multiple threads 同时执行，但代码量大大增加。如果只是普通的 application，用 redux-thunk 足够
-
-
+<br />
 
 # mobx
 响应式依赖状态
