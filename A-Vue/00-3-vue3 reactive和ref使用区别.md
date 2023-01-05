@@ -18,5 +18,3 @@ ref.value 返回的是一个 proxy 对象，他是通过代理 reactive 实现�
 ## 3. 使用角度对比：
 * ref 定义的数据：操作数据需要 .value,读取数据时模版中直接读取不需要 .value
 * reactive 定义的数据：操作数据与读取数据，均不需要 .value
-
-

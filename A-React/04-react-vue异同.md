@@ -1,7 +1,7 @@
 ## 1.vue 特点
-1. Vue的template、script、style是分离的，可读性和可维护性比较好
+* 1.Vue的template、script、style是分离的，可读性和可维护性比较好
 
-2. 提供了便捷的模板命令
+* 2.提供了便捷的模板命令
 ```
 vue 用v-if 条件渲染div
 还有v-model,v-on:click,v-for
@@ -9,21 +9,41 @@ vue 用v-if 条件渲染div
 react中用js，运算符去实现 v-if, array.map() 去实现 v-for
 ```
 
-3. 提供了computed,watch 副作用的钩子，在react 统一使用useEffect去实现这些功能
+* 3.提供了computed,watch 副作用的钩子，在react 统一使用useEffect去实现这些功能
 ```javaScript
 改变组件状态：
 vue: this.data = x;
 react: setState(x);
 ```
+4. 模板引擎和生成虚拟dom方式不同;
 
-4. 组件挂载前onBeforeMount,renderComponentRoot 执行构建出来的render() 生成vnode
+## vue模板引擎
+编译模板阶段生成render函数:
+如果有配置，直接使用配置的render函数，如果没有，使用运行时编译器，把模板编译成render函数。
+
+在执行render函数的过程中会搜集所有依赖，将来依赖发生变换时会出现执行updateCompontent函数。
+
+在执行_update的过程中，会触发patch函数，由于目前还没有就的虚拟DOM树，因此直接为当前的虚拟DOM树的每一个节点生成对应elm属性，即真实DOM。
+
+最终会把创建好的组件实例挂载到vnode的compontentInstance属性中，以便复用。
+
+1. baseParse生成ast
+
+2. transform对ast进行转换,变换AST的结构
+因为只有拿到生成的 AST 我们才能遍历 AST 的节点进行 transform 转换操作，比如解析 v-if、v-for 等各种指令。
+也能对源码进行优化:
+vue3新特性：transform中的hoistStatic发生静态提升
+hoistStatic其会递归ast并发现一些不会变的节点与属性，给他们打上可以静态提升的标记。在生成代码字符串阶段，将其序列化成字符串、以减少编译和渲染成本。
+
+3. generate根据变换后的转换AST生成render()函数
+
+
+4. 组件挂载前onBeforeMount,renderComponentRoot 执行构建ast生成的render() 生成vnode
 ```mermaid
 flowchart LR
 
 template-->ast-->a1("render()")--执行render-->VNode
 ```
-
-4. 模板引擎和生成虚拟dom方式不同;
 
 ```mermaid
 flowchart TD
@@ -355,18 +375,11 @@ const componentUpdateFn = () => {
 ```
 
 
-### vue模板引擎
-1. baseParse生成ast
 
-2. transform对ast进行转换,变换AST的结构
-因为只有拿到生成的 AST 我们才能遍历 AST 的节点进行 transform 转换操作，比如解析 v-if、v-for 等各种指令。
-也能对源码进行优化:
-vue3新特性：transform中的hoistStatic发生静态提升
-hoistStatic其会递归ast并发现一些不会变的节点与属性，给他们打上可以静态提升的标记。在生成代码字符串阶段，将其序列化成字符串、以减少编译和渲染成本。
 
-3. generate根据变换后的转换AST生成render()函数
+<br />
 
-### react 模板引擎
+## react 模板引擎
 react初始化的时候使用bable 处理jsx模板组件，得到ast树的结构,然后再进一步构建fiber树
 
 5. 由于 Vue 是通过 template 模版进行编译的，所以在编译的时候可以很好对静态节点进行分析然后进行打补丁标记，然后在 Diff 的时候，Vue2 是判断如果是静态节点则跳过过循环对比，而 Vue3 则是把整个静态节点进行提升处理，Diff 的时候是不过进入循环的，所以 Vue3 比 Vue2 的 Diff 性能更高效。而 React 因为是通过 JSX 进行编译的，是无法进行静态节点分析的，所以 React 在对静态节点处理这一块是要逊色的。
