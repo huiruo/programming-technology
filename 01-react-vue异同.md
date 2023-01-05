@@ -1,4 +1,4 @@
-## 1.vue 特点
+# 1.vue 特点
 * 1.Vue的template、script、style是分离的，可读性和可维护性比较好
 
 * 2.提供了便捷的模板命令
@@ -374,14 +374,9 @@ const componentUpdateFn = () => {
 }
 ```
 
-
-
-
 <br />
 
-## react 模板引擎
-react初始化的时候使用bable 处理jsx模板组件，得到ast树的结构,然后再进一步构建fiber树
-
+## 其他异同点
 5. 由于 Vue 是通过 template 模版进行编译的，所以在编译的时候可以很好对静态节点进行分析然后进行打补丁标记，然后在 Diff 的时候，Vue2 是判断如果是静态节点则跳过过循环对比，而 Vue3 则是把整个静态节点进行提升处理，Diff 的时候是不过进入循环的，所以 Vue3 比 Vue2 的 Diff 性能更高效。而 React 因为是通过 JSX 进行编译的，是无法进行静态节点分析的，所以 React 在对静态节点处理这一块是要逊色的。
 
 6. 渲染/更新方式,见下面扩展
@@ -448,7 +443,7 @@ function $set(data, key, value) {
 
 <br />
 
-## 2.react 特点
+# 2.react 特点
 1. 模板引擎:jsx
 react初始化的时候使用bable 处理jsx模板组件，得到ast树的结构,然后再进一步构建fiber树
 
@@ -460,20 +455,7 @@ react初始化的时候使用bable 处理jsx模板组件，得到ast树的结构
 ```
 4. 可不回答：丰富的技术生态圈,很多大型应用都是react
 5. react 渲染/更新方式
-```
-03-react更新方式-源码初探-jsx-ast-createElement.md
-```
 
-## 3.vue和react相同和不相同的地方
-```
-1. 虚拟dom,以数据为驱动的开发模式;
-
-2. 单向数据流，单向数据流就是model的更新会触发view的更新，view的更新不会触发model的更新，它们的作用是单向的.
-
-不同：
-1.更新方式
-2.模板引擎
-```
 ### 3-1.优化方式 的不同
 ```
 react useMemo 或则旧版shouldComponentUpdate 决定组件是否需要重现渲染
@@ -482,3 +464,12 @@ react 改变state 需要this.setState()，react不允许直接更改状态，set
 所以，react没办法做到检测属性变化直接驱动render函数的执行，得依赖依赖setState调用.而且所有子组件会刷新。
 （如果需要通过setState第二个参数传入callback能让你拿到更新后的state）
 ```
+
+## 3.vue和react相同
+1. 虚拟dom,以数据为驱动的开发模式;
+
+2. 单向数据流，单向数据流就是model的更新会触发view的更新，view的更新不会触发model的更新，它们的作用是单向的.
+
+不同：
+1.更新方式
+2.模板引擎

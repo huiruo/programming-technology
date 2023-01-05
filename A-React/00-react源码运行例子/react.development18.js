@@ -770,7 +770,8 @@
    */
 
   function createElement(type, config, children) {
-    console.log('react.development18_createElement构建Ast树:', { type, config, children })
+    // console.log('=development调用createElement构建Ast树:', { type, config, children })
+    console.log('%c=development调用createElement-1:type', 'color:blueviolet', type, { config, children })
     var propName; // Reserved names are extracted
 
     var props = {};
@@ -852,8 +853,9 @@
         }
       }
     }
-
-    return ReactElement(type, key, ref, self, source, ReactCurrentOwner.current, props);
+    const reactElementRes = ReactElement(type, key, ref, self, source, ReactCurrentOwner.current, props);
+    console.log('=development调用createElement-2:返回:', reactElementRes)
+    return reactElementRes
   }
   function cloneAndReplaceKey(oldElement, newKey) {
     var newElement = ReactElement(oldElement.type, newKey, oldElement.ref, oldElement._self, oldElement._source, oldElement._owner, oldElement.props);

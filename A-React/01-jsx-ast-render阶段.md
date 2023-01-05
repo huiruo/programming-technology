@@ -1,4 +1,846 @@
-# 请你描述react的渲染
+# 前言
+## react 模板引擎
+```mermaid
+flowchart LR
+
+A1(jsx的Fn组件)-->A2(ast tree)--转化-->A3(生成code函数)--开始执行code-->A4(fiber tree)-->A5(DOM)
+```
+react初始化的时候使用bable 处理jsx模板组件，得到ast树的结构树,并转化为code函数
+
+jsx 转换为了浏览器能够识别的原生js语法，为 react 后续对状态改变、事件响应以及页面更新等奠定了基础。
+
+先看bable 的执行函数
+```javaScript
+function transform(code, options) {
+  console.log('=Babel-transform-参数:', { code })
+  const babel_transform = Babel.transform(code, processOptions(options));
+  console.log('=Babel-返回:', babel_transform)
+  return babel_transform
+}
+```
+
+详细见01-辅-bable返回
+```json
+{
+"metadata":"",
+"options":"",
+"ignored":"",
+"code":"",
+"ast":"",
+"map":""
+}
+```
+
+## code:
+```javaScript
+'use strict';
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+console.log('=Babel:', Babel);
+function Test() {
+  console.log('test-render');
+
+  var _React$useState = React.useState('改变我'),
+    _React$useState2 = _slicedToArray(_React$useState, 2),
+    data = _React$useState2[0],
+    setData = _React$useState2[1];
+
+  var _React$useState3 = React.useState(false),
+    _React$useState4 = _slicedToArray(_React$useState3, 2),
+    showDiv = _React$useState4[0],
+    setShowDiv = _React$useState4[1];
+
+  var onClickText = function onClickText() {
+    console.log('=useState=onClick');
+    setData('努力哦');
+    setShowDiv(!showDiv);
+  };
+
+  var onClickText2 = function onClickText2() {
+    console.log('=useState=onClick:', data);
+  };
+
+  React.useEffect(function () {
+    console.log('=副作用-useEffect-->运行');
+  }, []);
+
+  React.useLayoutEffect(function () {
+    console.log('=副作用-useLayoutEffect-->运行');
+  }, []);
+
+  return React.createElement(
+    'div',
+    { id: 'div1', className: 'c1' },
+    React.createElement(
+      'button',
+      { onClick: onClickText, className: 'btn' },
+      'Hello world,Click me'
+    ),
+    React.createElement(
+      'span',
+      null,
+      data
+    ),
+    showDiv && React.createElement(
+      'div',
+      null,
+      '\u88AB\u4F60\u53D1\u73B0\u4E86'
+    ),
+    React.createElement(
+      'div',
+      { id: 'div2', className: 'c2' },
+      React.createElement(
+        'p',
+        null,
+        '\u6D4B\u8BD5\u5B50\u8282\u70B9'
+      )
+    )
+  );
+}
+
+var root = ReactDOM.createRoot(document.getElementById('root'));
+console.log("=app=root:", root);
+root.render(React.createElement(Test, null));
+// 17 写法
+// ReactDOM.render(<Test />, document.getElementById('root'))
+```
+
+```javaScript
+function createElement(type, config, children) {
+  // console.log('=development调用createElement构建Ast树:', { type, config, children })
+  console.log('%c=development调用createElement-1:type', 'color:blueviolet', type, { config, children })
+  var propName; // Reserved names are extracted
+
+  var props = {};
+  var key = null;
+  var ref = null;
+  var self = null;
+  var source = null;
+
+  if (config != null) {
+    if (hasValidRef(config)) {
+      ref = config.ref;
+
+      {
+        warnIfStringRefCannotBeAutoConverted(config);
+      }
+    }
+
+    if (hasValidKey(config)) {
+      {
+        checkKeyStringCoercion(config.key);
+      }
+
+      key = '' + config.key;
+    }
+
+    self = config.__self === undefined ? null : config.__self;
+    source = config.__source === undefined ? null : config.__source; // Remaining properties are added to a new props object
+
+    for (propName in config) {
+      if (hasOwnProperty.call(config, propName) && !RESERVED_PROPS.hasOwnProperty(propName)) {
+        props[propName] = config[propName];
+      }
+    }
+  } // Children can be more than one argument, and those are transferred onto
+  // the newly allocated props object.
+
+
+  var childrenLength = arguments.length - 2;
+
+  if (childrenLength === 1) {
+    props.children = children;
+  } else if (childrenLength > 1) {
+    var childArray = Array(childrenLength);
+
+    for (var i = 0; i < childrenLength; i++) {
+      childArray[i] = arguments[i + 2];
+    }
+
+    {
+      if (Object.freeze) {
+        Object.freeze(childArray);
+      }
+    }
+
+    props.children = childArray;
+  } // Resolve default props
+
+
+  if (type && type.defaultProps) {
+    var defaultProps = type.defaultProps;
+
+    for (propName in defaultProps) {
+      if (props[propName] === undefined) {
+        props[propName] = defaultProps[propName];
+      }
+    }
+  }
+
+  {
+    if (key || ref) {
+      var displayName = typeof type === 'function' ? type.displayName || type.name || 'Unknown' : type;
+
+      if (key) {
+        defineKeyPropWarningGetter(props, displayName);
+      }
+
+      if (ref) {
+        defineRefPropWarningGetter(props, displayName);
+      }
+    }
+  }
+  const reactElementRes = ReactElement(type, key, ref, self, source, ReactCurrentOwner.current, props);
+  console.log('=development调用createElement-2:返回:', reactElementRes)
+  return reactElementRes
+}
+```
+
+### beginWork
+首次beginWork进入case IndeterminateComponent 执行 mountIndeterminateComponent(),可见深度遍历从父级组件开始
+
+首先要注意的是，虽然 App 是一个 FunctionComponent，但是在 first paint 的时候，React 判断其为 IndeterminateComponent
+
+对于 FunctionComponent，在第一次识别的时候会被认为是 IndeterminateComponent
+
+一个函数，只要返回的是一个对象且对象中有 render 方法，就认为是 ClassComponent，否则就是 FunctionComponent
+
+```javaScript
+    switch (workInProgress.tag) {
+      case IndeterminateComponent:
+        {
+          console.log('%c=beginWork()==end 2 mountIndeterminateComponent', 'color:magenta')
+          console.log(`%c=探究初始和hook=调用mountIndeterminateComponent`, 'color:blueviolet')
+          return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
+        }
+```
+
+```javaScript
+function beginWork(current, workInProgress, renderLanes) {
+    workInProgress.lanes = NoLanes;
+    console.log('%c=beginWork()===start1-初始化', 'color:magenta', { getFiberName: getFiberName(workInProgress), current, renderLanes, workInProgress })
+    switch (workInProgress.tag) {
+      case IndeterminateComponent:
+        {
+          console.log('%c=beginWork()==end 2 mountIndeterminateComponent', 'color:magenta')
+          console.log(`%c=探究初始和hook=调用mountIndeterminateComponent`, 'color:blueviolet')
+          return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
+        }
+
+      case LazyComponent:
+        {
+          var elementType = workInProgress.elementType;
+          console.log('%c=beginWork()=end 3 mountLazyComponent', 'color:magenta')
+          return mountLazyComponent(current, workInProgress, elementType, renderLanes);
+        }
+
+      case FunctionComponent:
+        {
+          var Component = workInProgress.type;
+          var unresolvedProps = workInProgress.pendingProps;
+          var resolvedProps = workInProgress.elementType === Component ? unresolvedProps : resolveDefaultProps(Component, unresolvedProps);
+          console.log('%c=beginWork()=end 4只有更新才会调用updateFunctionComponent', 'color:magenta')
+          return updateFunctionComponent(current, workInProgress, Component, resolvedProps, renderLanes);
+        }
+
+      case ClassComponent:
+        {
+          var _Component = workInProgress.type;
+          var _unresolvedProps = workInProgress.pendingProps;
+
+          var _resolvedProps = workInProgress.elementType === _Component ? _unresolvedProps : resolveDefaultProps(_Component, _unresolvedProps);
+          console.log('%c=beginWork()=end 5 updateClassComponent', 'color:magenta')
+          return updateClassComponent(current, workInProgress, _Component, _resolvedProps, renderLanes);
+        }
+
+      case HostRoot:
+        console.log('%c=beginWork()=end 6 updateHostRoot', 'color:magenta')
+        return updateHostRoot(current, workInProgress, renderLanes);
+
+      case HostComponent:
+        console.log(`%c=beginWork()=end 7 updateHostComponent$1,即原生 DOM 组件对应的 Fiber节点:`, 'color:magenta', { type: workInProgress.type })
+        return updateHostComponent$1(current, workInProgress, renderLanes);
+
+      case HostText:
+        console.log('%c=beginWork()=end 8 updateHostText$1', 'color:magenta')
+        return updateHostText$1(current, workInProgress);
+
+      case SuspenseComponent:
+        console.log('%c=beginWork()=end 9 updateSuspenseComponent', 'color:magenta')
+        return updateSuspenseComponent(current, workInProgress, renderLanes);
+
+      case HostPortal:
+        console.log('%c=beginWork()=end 10 updatePortalComponent', 'color:magenta')
+        return updatePortalComponent(current, workInProgress, renderLanes);
+
+      case ForwardRef:
+        {
+          var type = workInProgress.type;
+          var _unresolvedProps2 = workInProgress.pendingProps;
+
+          var _resolvedProps2 = workInProgress.elementType === type ? _unresolvedProps2 : resolveDefaultProps(type, _unresolvedProps2);
+
+          console.log('%c=beginWork()=end 11 updateForwardRef', 'color:magenta')
+          return updateForwardRef(current, workInProgress, type, _resolvedProps2, renderLanes);
+        }
+
+      case Fragment:
+        console.log('%c=beginWork()=end 12 updateFragment', 'color:magenta')
+        return updateFragment(current, workInProgress, renderLanes);
+
+      case Mode:
+        console.log('%c=beginWork()=end 13 updateMode', 'color:magenta')
+        return updateMode(current, workInProgress, renderLanes);
+
+      case Profiler:
+        console.log('%c=beginWork()=end 14 updateProfiler', 'color:magenta')
+        return updateProfiler(current, workInProgress, renderLanes);
+
+      case ContextProvider:
+        console.log('%c=beginWork()=end 15 updateContextProvider', 'color:magenta')
+        return updateContextProvider(current, workInProgress, renderLanes);
+
+      case ContextConsumer:
+        console.log('%c=beginWork()=end 16 updateContextConsumer', 'color:magenta')
+        return updateContextConsumer(current, workInProgress, renderLanes);
+
+      case MemoComponent:
+        {
+          var _type2 = workInProgress.type;
+          var _unresolvedProps3 = workInProgress.pendingProps; // Resolve outer props first, then resolve inner props.
+
+          var _resolvedProps3 = resolveDefaultProps(_type2, _unresolvedProps3);
+
+          {
+            if (workInProgress.type !== workInProgress.elementType) {
+              var outerPropTypes = _type2.propTypes;
+
+              if (outerPropTypes) {
+                checkPropTypes(outerPropTypes, _resolvedProps3, // Resolved for outer only
+                  'prop', getComponentNameFromType(_type2));
+              }
+            }
+          }
+
+          _resolvedProps3 = resolveDefaultProps(_type2.type, _resolvedProps3);
+          console.log('%c=beginWork()=end 17 updateMemoComponent', 'color:magenta')
+          return updateMemoComponent(current, workInProgress, _type2, _resolvedProps3, renderLanes);
+        }
+
+      case SimpleMemoComponent:
+        {
+          console.log('%c=beginWork()=end 18 updateSimpleMemoComponent', 'color:magenta')
+          return updateSimpleMemoComponent(current, workInProgress, workInProgress.type, workInProgress.pendingProps, renderLanes);
+        }
+
+      case IncompleteClassComponent:
+        {
+          var _Component2 = workInProgress.type;
+          var _unresolvedProps4 = workInProgress.pendingProps;
+
+          var _resolvedProps4 = workInProgress.elementType === _Component2 ? _unresolvedProps4 : resolveDefaultProps(_Component2, _unresolvedProps4);
+          console.log('%c=beginWork()=end 19 mountIncompleteClassComponent', 'color:magenta')
+          return mountIncompleteClassComponent(current, workInProgress, _Component2, _resolvedProps4, renderLanes);
+        }
+
+      case SuspenseListComponent:
+        {
+          console.log('%c=beginWork()=end 20 updateSuspenseListComponent', 'color:magenta')
+          return updateSuspenseListComponent(current, workInProgress, renderLanes);
+        }
+
+      case ScopeComponent:
+        {
+
+          break;
+        }
+
+      case OffscreenComponent:
+        {
+          console.log('%c=beginWork()=end 21 updateOffscreenComponent', 'color:magenta')
+          return updateOffscreenComponent(current, workInProgress, renderLanes);
+        }
+    }
+    throw new Error("Unknown unit of work tag (" + workInProgress.tag + "). This error is likely caused by a bug in " + 'React. Please file an issue.');
+  }
+}
+```
+
+### 重点：code函数初始化在renderWithHooks这里执行
+
+mountIndeterminateComponent 
+* 调用  renderWithHooks
+* 执行 reconcileChildren(null, workInProgress, value, renderLanes)
+
+
+关键的函数 renderWithHooks；而在 renderWithHooks 中，我们会根据组件处于不同的状态，给 ReactCurrentDispatcher.current 挂载不同的 dispatcher 。而在first paint 时，挂载的是HooksDispatcherOnMountInDEV
+
+HooksDispatcherOnMountInDEV 里就是组件 first paint 的时候所用到的各种 hooks
+```javaScript
+function mountIndeterminateComponent(_current, workInProgress, Component, renderLanes) {
+    // 省略
+    setIsRendering(true);
+    ReactCurrentOwner$1.current = workInProgress;
+    console.log(`%c=探究初始和hook=mountIndeterminateComponent调用renderWithHooks 1`, 'color:blueviolet', { workInProgress, Component, props, context, renderLanes })
+    value = renderWithHooks(null, workInProgress, Component, props, context, renderLanes);
+    console.log(`%c=探究初始和hook=mountIndeterminateComponent调用renderWithHooks 返回值`, 'color:blueviolet', { value })
+    // 省略
+
+   if (getIsHydrating() && hasId) {
+        pushMaterializedTreeId(workInProgress);
+      }
+      console.log('%c=reconcileChildren 12:重点，mountIndeterminateComponent调用reconcileChildren', 'color:red')
+      reconcileChildren(null, workInProgress, value, renderLanes);
+
+      {
+        validateFunctionComponentInDev(workInProgress, Component);
+      }
+
+      return workInProgress.child;
+    }
+  }
+}
+```
+```javaScript
+function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
+    // 省略：
+    console.log(`%c=探究初始和hook=renderWithHooks重点，调用函数组件，里面执行各种 React Hook==start并返回 ReactElement`, 'color:blueviolet', Component)
+    var children = Component(props, secondArg); // Check if there was a render phase update
+    console.log(`%c=探究初始和hook=renderWithHooks重点,返回 ReactElement==end`, 'color:blueviolet', { children })
+    // 省略：
+    return children;
+}
+```
+
+初始化-->mountChildFibers
+```javaScript
+function reconcileChildren(current, workInProgress, nextChildren, renderLanes) {
+  if (current === null) {
+    // If this is a fresh new component that hasn't been rendered yet, we
+    // won't update its child set by applying minimal side-effects. Instead,
+    // we will add them all to the child before it gets rendered. That means
+    // we can optimize this reconciliation pass by not tracking side-effects.
+    console.log('%c=reconcileChildren mount', 'blueviolet');
+    workInProgress.child = mountChildFibers(workInProgress, null, nextChildren, renderLanes);
+    console.log('%c=reconcileChildren mount 返回值workInProgress.child', 'blueviolet',workInProgress.child);
+  } else {
+    // If the current child is the same as the work in progress, it means that
+    // we haven't yet started any work on these children. Therefore, we use
+    // the clone algorithm to create a copy of all the current children.
+    // If we had any progressed work already, that is invalid at this point so
+    // let's throw it out.
+    console.log('%c=reconcileChildren update', 'yellow');
+    workInProgress.child = reconcileChildFibers(workInProgress, current.child, nextChildren, renderLanes);
+  }
+}
+```
+
+
+### ChildReconciler
+从该函数名就能看出这是Reconciler模块的核心部分。那么他究竟做了什么呢？
+* 对于 mount 的组件，他会创建新的子 Fiber 节点；
+* 对于 update 的组件，他会将当前组件与该组件在上次更新时对应的 Fiber 节点比较（也就是俗称的Diff 算法），将比较的结果生成新 Fiber 节点。
+
+不论走哪个逻辑，最终他会生成新的子 Fiber 节点并赋值给workInProgress.child，作为本次 beginWork 返回值，并作为下次performUnitOfWork执行时workInProgress的传参。
+
+mountChildFibers与reconcileChildFibers这两个方法的逻辑基本一致。唯一的区别是：reconcileChildFibers 会为生成的 Fiber 节点带上effectTag属性，而 mountChildFibers 不会。
+```javaScript
+var mountChildFibers = ChildReconciler(false);
+
+// 这个代码很长 1k
+function ChildReconciler(shouldTrackSideEffects) {
+
+}
+```
+
+root.render(React.createElement(Test, null));
+调用的参数是：React.createElement(Test, null)处理之后的：
+```javaScript
+var ReactElement = function (type, key, ref, self, source, owner, props) {
+    var element = {
+      // This tag allows us to uniquely identify this as a React Element
+      $$typeof: REACT_ELEMENT_TYPE,
+      // Built-in properties that belong on the element
+      type: type,
+      key: key,
+      ref: ref,
+      props: props,
+      // Record the component responsible for creating this element.
+      _owner: owner
+    };
+
+    return element;
+}
+```
+
+### React.createElement 旧api
+https://cloud.tencent.com/developer/article/2135083
+react17 之后我们可以不再依赖 React.createElement 这个 api 了，但是实际场景中以及很多开源包中可能会有很多通过 React.createElement 手动创建元素的场景:
+
+React.createElement 其接收三个或以上参数：
+
+* type：要创建的 React 元素类型，可以是标签名称字符串，如 'div' 或者 'span' 等；也可以是 React组件 类型(class组件或者函数组件)；或者是 React fragment 类型。
+* config：写在标签上的属性的集合，js 对象格式，若标签上未添加任何属性则为 null。
+* children：从第三个参数开始后的参数为当前创建的React元素的子节点，每个参数的类型，若是当前元素节点的 textContent 则为字符串类型；否则为新的 React.createElement 创建的元素。
+
+## 开始
+```mermaid
+flowchart TD
+A1("ReactDOM.createRoot(document.getElementById('root'))")--1FiberRoot创建-->A2("return new ReactDOMRoot(root)")-->1FiberRoot-->A6("root=createContainer(container")-->A7("return createFiberRoot(containerInfo")--1FiberRoot初始化相关只调用一次-->A8("root=new FiberRootNode(containerInfo")
+
+A7--2root.current=uninitializedFiber-->A11("uninitializedFiber=createHostRootFiber(tag,isStrictMode)")-->A12("return createFiber(HostRoot")
+
+A1--2开启render-->A3("root.render(<组件>)")-->A4("ReactDOMRoot.prototype.render")
+A4--开始渲染,注意非批量-->A5("updateContainer(children, root")
+```
+
+## 接上面updateContainer
+fiber 协调过程,构建fiber树的阶段可中断
+```mermaid
+flowchart TD
+A1("updateContainer(children, root")-->A2("root=scheduleUpdateOnFiber(current$1,lane")--> A3("ensureRootIsScheduled(root,eventTime)")
+
+A3--"ensureRootIsScheduled(root,currentTime)函数中"-->ifB{{"更新方式?newCallbackPriority ===SyncLane"}}
+
+D1("scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null,root))")
+D2("newCallbackNode=scheduleCallback$1(schedulerPriorityLevel, performConcurrentWorkOnRoot.bind(null,root))")
+
+ifB--true异步更新legacy模式-->D1
+ifB--初次渲染默认false,同步更新concurrent模式-->D2
+
+D2-->D3("scheduleCallback$1")-->D4("performConcurrentWorkOnRoot(root, didTimeout){<br> exitStatus = renderRootSync(root,lanes)}")
+
+D4--1-->D5("renderRootSync(root,lanes)")
+
+D4--"2.exitStatus!==RootInProgress"-->C1("finishConcurrentRender(root,exitStatus)render阶段结束,commit阶段前")
+
+D5(workLoopSync)-->A0Aif
+A0Aif{{workInProgress!=null?}}--不为null-->E1
+A0Aif--为null-->endW(结束当前循环)
+
+subgraph render1[构建fiber树/协调阶段:render是一个深度优先遍历的过程核心函数beginWork和completeUnitOfWork]
+
+  E1(performUnitOfWork:深度遍历)
+
+  E1--1.遍历到的节点执行beginWork创建子fiber节点-->E2(beginWork$1处理完返回next)
+
+  E1--2.若当前节点不存在子节点:next=null-->E6B(completeUnitOfWork)
+  
+  E2--current=null初始化:tag进入不同case-->E6A(case:HostComponent为例)-->E6A1(updateHostComponent$1)-->E6A2(reconcileChildren)--current!=null-->E6A3(reconcileChildFibers)
+
+	%% subgraph beginWork2[beginWork第二阶段]
+	E6A2--current==null-->z1("mountChildFibers:beginWork第二阶段")-->z2(ChildReconciler)--case-->z3(placeSingleChild)
+	%% end
+
+  E2-.current!=null更新流程.->E51(attemptEarlyBailoutIfNoScheduledUpdate)-->E52(bailoutOnAlreadyFinishedWork)-->E53(cloneChildFibers)
+
+  E6B-->E6B1[为传入的节点执行completeWork:执行不同tag]--case:HostComponent并且current!=null-->E6B2(update流程:updateHostComponent)-->E6A1A(prepareUpdate:对比props)-->E6A1B(diffProperties)-->E6A1C(markUpdate:赋值更新的flags也叫update)
+
+  E6B1--case:HostComponent-current=null-->E6B3(为fiber创建dom:createInstance)
+  E6B3--case:HostComponent-current=null-->E6B4(add child dom:appendAllChildren)
+  E6B3-->E6B3A(createElement)-->E6B3B(document.createElement)
+
+  E53-->createWorkInProgress
+  E53-.tag类型进入不同case.->E6A
+
+	%% subgraph render2[构建FiberNode]
+	E6A3-.根据子节点类型创建fiebr节点.->o1(reconcileSingleElement) -->o2(createFiberFromElement) --> o3(createFiberFromTypeAndProps) --fiber.type也是在这里赋值--> o4(createFiber)--> o5(return new FiberNode)
+	%% end
+end
+```
+
+## commit阶段
+commit阶段之beforeMutation和mutation阶段
+```mermaid
+flowchart TD
+A1(finishConcurrentRender)-->A2("commitRoot")-->A3("commitRootImpl(root,")
+
+A3-->2A
+A3(commitRootImpl)-->3A
+
+subgraph befor[beforeMutation阶段]
+  2A(commitBeforeMutationEffects)--18或高版本-->2B(commitBeforeMutationEffects_begin)-->2C(commitBeforeMutationEffects_complete)-->2D(commitBeforeMutationEffectsOnFiber)
+end
+
+subgraph Mutation[mutation阶段]
+  3A(commitMutationEffects)-->3B(commitMutationEffectsOnFiber)--case里面都会执行-->3C(recursivelyTraverseMutationEffects)
+
+  3C-->3B
+  3B-->3D1(commitReconciliationEffects)-->3E(commitPlacement)
+  3B--case:SimpleMemoComponent-->3D2(commitHookEffectListUnmount)
+  3B--case:HostComponent-->3D3(commitUpdate)
+  3E--HostComponent-->3E1(insertOrAppendPlacementNode)-->3E1a(insertBefore)
+  3E--HostPortal-->3E2(insertOrAppendPlacementNodeIntoContainer)
+
+  3E1-->3E1b(appendChild)
+end
+```
+
+commit阶段之layout最后阶段
+```mermaid
+flowchart TD
+C1(commitRootImpl)
+C1-->4A
+C1--layout最后阶段-->5A
+subgraph layout[layout阶段]
+  4A(commitLayoutEffect)-->4B(commitLayoutEffects_begin)-->4C(commitLayoutMountEffects_complete)-->4D(commitLayoutEffectOnFiber)
+
+  4D--case=ClassComponent-->4E1(componentDidMount)-->4E2(commitUpdateQueue)
+  4D--case=SimpleMemoComponent-->4E3(commitHookEffectListMount)
+
+  5A(flushPassiveEffects)-->5B(flushPassiveEffectsImpl)
+  5B--执行useEffect的销毁函数-->5C1(commitPassiveUnmountEffects)
+  5B--执行useEffect的create函数-->5C2(commitPassiveMountEffects)
+end
+```
+
+## 开始1
+
+```javaScript
+const root = ReactDOM.createRoot(document.getElementById('root'))
+console.log("=app=root:", root)
+root.render(<Test />);
+
+function createRoot(container, options) {
+		// 省略
+    console.log('%c=一切开始1:createRoot(', 'color:red', { createRoot: container, options })
+    var root = createContainer(container, ConcurrentRoot, null, isStrictMode, concurrentUpdatesByDefaultOverride, identifierPrefix, onRecoverableError);
+    markContainerAsRoot(root.current, container);
+    var rootContainerElement = container.nodeType === COMMENT_NODE ? container.parentNode : container;
+    listenToAllSupportedEvents(rootContainerElement);
+    return new ReactDOMRoot(root);
+}
+
+function createContainer(containerInfo, tag, hydrationCallbacks, isStrictMode, concurrentUpdatesByDefaultOverride, identifierPrefix, onRecoverableError, transitionCallbacks) {
+	var hydrate = false;
+	var initialChildren = null;
+	console.log('初始/更新-->FiberRoot:a-->createContainer')
+	return createFiberRoot(containerInfo, tag, hydrate, initialChildren, hydrationCallbacks, isStrictMode, concurrentUpdatesByDefaultOverride, identifierPrefix, onRecoverableError);
+}
+```
+
+FiberRootNode是初始化相关只调用一次
+```javaScript
+function createFiberRoot(containerInfo, tag, hydrate, initialChildren, hydrationCallbacks, isStrictMode, concurrentUpdatesByDefaultOverride, // TODO: We have several of these arguments that are conceptually part of the
+	// host config, but because they are passed in at runtime, we have to thread
+	// them through the root constructor. Perhaps we should put them all into a
+	// single type, like a DynamicHostConfig that is defined by the renderer.
+	identifierPrefix, onRecoverableError, transitionCallbacks) {
+	var root = new FiberRootNode(containerInfo, tag, hydrate, identifierPrefix, onRecoverableError);
+
+	return root;
+}
+
+function FiberRootNode(containerInfo, tag, hydrate, identifierPrefix, onRecoverableError) {
+	console.log('==FiberRootNode是初始化相关只调用一次===')
+	this.tag = tag;
+	this.containerInfo = containerInfo;
+	this.pendingChildren = null;
+	this.current = null;
+	this.pingCache = null;
+	this.finishedWork = null;
+	this.timeoutHandle = noTimeout;
+	this.context = null;
+	this.pendingContext = null;
+	this.callbackNode = null;
+	this.callbackPriority = NoLane;
+	this.eventTimes = createLaneMap(NoLanes);
+	this.expirationTimes = createLaneMap(NoTimestamp);
+	this.pendingLanes = NoLanes;
+	this.suspendedLanes = NoLanes;
+	this.pingedLanes = NoLanes;
+	this.expiredLanes = NoLanes;
+	this.mutableReadLanes = NoLanes;
+	this.finishedLanes = NoLanes;
+	this.entangledLanes = NoLanes;
+	this.entanglements = createLaneMap(NoLanes);
+	this.identifierPrefix = identifierPrefix;
+	this.onRecoverableError = onRecoverableError;
+
+	{
+		this.mutableSourceEagerHydrationData = null;
+	}
+
+	{
+		this.effectDuration = 0;
+		this.passiveEffectDuration = 0;
+	}
+
+	{
+		this.memoizedUpdaters = new Set();
+		var pendingUpdatersLaneMap = this.pendingUpdatersLaneMap = [];
+
+		for (var _i = 0; _i < TotalLanes; _i++) {
+			pendingUpdatersLaneMap.push(new Set());
+		}
+	}
+
+	{
+		switch (tag) {
+			case ConcurrentRoot:
+				this._debugRootType = hydrate ? 'hydrateRoot()' : 'createRoot()';
+				break;
+
+			case LegacyRoot:
+				this._debugRootType = hydrate ? 'hydrate()' : 'render()';
+				break;
+		}
+	}
+}
+```
+
+可见children 就是根节点
+```javaScript
+ReactDOMHydrationRoot.prototype.render = ReactDOMRoot.prototype.render = function (children) {
+	console.log('%c=一切开始3:', 'color:red', 'ReactDOMRoot.prototype.render调用updateContainer()开启render阶段==', { children });
+	var root = this._internalRoot;
+	// 省略函数
+	updateContainer(children, root, null, null);
+};
+```
+
+## 开始2 updateContainer(
+```javaScript
+function updateContainer(element, container, parentComponent, callback) {
+	{
+		onScheduleRoot(container, element);
+	}
+
+	var current$1 = container.current;
+	var eventTime = requestEventTime();
+	var lane = requestUpdateLane(current$1);
+
+	{
+		markRenderScheduled(lane);
+	}
+
+	var context = getContextForSubtree(parentComponent);
+
+	if (container.context === null) {
+		container.context = context;
+	} else {
+		container.pendingContext = context;
+	}
+
+	// 省略
+	var update = createUpdate(eventTime, lane); // Caution: React DevTools currently depends on this property
+	// being called "element".
+
+	update.payload = {
+		element: element
+	};
+	callback = callback === undefined ? null : callback;
+
+
+	// 省略
+	console.log('==render阶段准备：updateContainer调用enqueueUpdate()和scheduleUpdateOnFiber()==')
+	enqueueUpdate(current$1, update);
+	var root = scheduleUpdateOnFiber(current$1, lane, eventTime);
+
+	if (root !== null) {
+		entangleTransitions(root, current$1, lane);
+	}
+
+	return lane;
+}
+```
+
+```javaScript
+function scheduleUpdateOnFiber(fiber, lane, eventTime) {
+	var root = markUpdateLaneFromFiberToRoot(fiber, lane);
+	console.log('==render阶段准备:scheduleUpdateOnFiber()调用ensureRootIsScheduled()==')
+	ensureRootIsScheduled(root, eventTime);
+	return root;
+}
+```
+
+```javaScript
+function ensureRootIsScheduled(root, currentTime) {
+	// 省略
+	if (newCallbackPriority === SyncLane) {
+		// Special case: Sync React callbacks are scheduled on a special
+		// internal queue
+		if (root.tag === LegacyRoot) {
+			if (ReactCurrentActQueue$1.isBatchingLegacy !== null) {
+				ReactCurrentActQueue$1.didScheduleLegacyUpdate = true;
+			}
+
+			console.log('%c=render阶段准备:ensureRootIsScheduled调用performSyncWorkOnRoot：异步更新legacy模式1==', 'color:red')
+			scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root));
+		} else {
+
+			console.log('%c=render阶段准备:ensureRootIsScheduled调用performSyncWorkOnRoot：异步更新legacy模式2==', 'color:red')
+			scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
+		}
+
+		// 省略
+	} else {
+		// 省略
+		// console.log('更新流程-->0-c2: performConcurrentWorkOnRoot')
+		console.log('%c=render阶段准备:', 'color:red', 'ensureRootIsScheduled()调用performConcurrentWorkOnRoot--同步更新:concurrent模式==')
+		newCallbackNode = scheduleCallback$1(schedulerPriorityLevel, performConcurrentWorkOnRoot.bind(null, root));
+	}
+
+	root.callbackPriority = newCallbackPriority;
+	root.callbackNode = newCallbackNode;
+}
+```
+
+### performConcurrentWorkOnRoot 这个函数在render结束会开启commit阶段
+```javaScript
+function performConcurrentWorkOnRoot(root, didTimeout) {
+	// 省略
+	console.log('%c==render阶段准备:重点函数performConcurrentWorkOnRoot,这个函数在render结束会开启commit阶段', 'color:red', 'color:cyan');
+
+	console.log('==render阶段准备:performConcurrentWorkOnRoot调用renderRootSync():同步更新concurrent模式:', { shouldTimeSlice });
+	var exitStatus = shouldTimeSlice ? renderRootConcurrent(root, lanes) : renderRootSync(root, lanes);
+
+	if (exitStatus !== RootInProgress) {
+		// 省略
+
+		if (exitStatus === RootDidNotComplete) {
+			markRootSuspended$1(root, lanes);
+		} else {
+			// 省略
+
+			root.finishedWork = finishedWork;
+			root.finishedLanes = lanes;
+			console.log(`%c=commit阶段=前=render阶段结束=performConcurrentWorkOnRoot调用finishConcurrentRender-->commitRoot`, 'color:cyan')
+			finishConcurrentRender(root, exitStatus, lanes);
+		}
+	}
+
+	// 省略
+
+	return null;
+}
+```
+
+```javaScript
+function renderRootSync(root, lanes) {
+	var prevExecutionContext = executionContext;
+	executionContext |= RenderContext;
+	var prevDispatcher = pushDispatcher(); // If the root or lanes have changed, throw out the existing stack
+	// 省略
+
+	do {
+		try {
+			console.log('%c=render阶段准备:', 'color:red', 'renderRootSync()调用workLoopSync()-root:', { root });
+			workLoopSync();
+			break;
+		} catch (thrownValue) {
+			handleError(root, thrownValue);
+		}
+	} while (true);
+
+	// 省略
+	workInProgressRoot = null;
+	workInProgressRootRenderLanes = NoLanes;
+	return workInProgressRootExitStatus;
+}
+```
+
 图例
 
 ![](./img-react/react18-函数调用栈1.png)
@@ -6,71 +848,8 @@
 ![](./img-react/react构建三个阶段参考.png)
 
 
-# 流程图
-## 程序入口
-```mermaid
-flowchart TD
-A0("React.createElement()转化后的Ast树结构")-."17版本或18中调用ReactDOM.render(ast,domRoot)".->A1
-
-A0-."18-ReactDOM.createRoot(domRoot).render(ast))".->a18("createRoot(container, options){<br> var root = createContainer(container, ConcurrentRoot)<br> return new ReactDOMRoot(root)}")
-
-%% 18 版本start
-a18--createContainer-->a18-1("return createFiberRoot(containerInfo, tag, hydrate,...)")
-a18--ReactDOMRoot-->a18-2("ReactDOMRoot.prototype.render = function (children) {<br> updateContainer(children, root, null, null)}")
-
-a18-2--开始渲染,注意非批量-->update2("updateContainer(element, container, ...)")
-%% 18 版本end
-
-%% 17 版本start
-A1("ReactDOM.render(astTree, container)")-->render("render(element, container, callback)")-->A3("return legacyRenderSubtreeIntoContainer(null, element, container,...)")-->A-1if
-
-A-1if{{root是否存在?}}
-
-A-1if--否:mount-->update1
-A-1if--是:开始渲染,批量-->update("updateContainer(element, container,)")
-
-update1("root = legacyCreateRootFromDOMContainer(container, initialChildren, parentComponent)<br> return getPublicRootInstance(root)")
-%% 17 版本end
-```
-
-## 2.接上面的mount流程,注意 17或则在18中调用ReactDOM.render(ast,domRoot)的流程，如果在18中调用ReactDOM.createRoot(domRoot).render(Ast) 是不用走下面的流程的,18直接上面的流程图构建fiber和更新
-```mermaid
-flowchart TD
-mount1("legacyCreateRootFromDOMContainer(container, initialChildren, parentComponent){<br/> return _root}")
-
-mount1--1-->update1("_root = createContainer(containerInfo, tag, ...)")
-mount1--2:开始渲染,注意非批量-->update2("updateContainer(element, container, ...)")
-
-update1-->update3("return createFiberRoot(containerInfo, tag, hydrate,...)")
-
-update3-->u4("root=new FiberRootNode(containerInfo, tag,...){<br> return root}")
-update3-->u5("root.current=createHostRootFiber(tag)")
-```
-
-## 3.重点：17/18版本 初始化/更新 渲染流程,接上面 updateContainer
-```mermaid
-flowchart TD
-A1("updateContainer(element, container, parentComponent,...){<br> lane = requestUpdateLane(current$1)
-return lane}")-->B1
-
-A1-->B2("enqueueUpdate(current$1, update)")
-
-B1("root = scheduleUpdateOnFiber(current$1, lane, eventTime){<br>root = markUpdateLaneFromFiberToRoot(fiber, lane)<br>ensureRootIsScheduled(root, eventTime) <br>return root}")
-B1--"ensureRootIsScheduled(root, currentTime)函数中"-->ifB{{"更新方式?newCallbackPriority === SyncLane"}}
-
-D1("scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root))")
-D2("newCallbackNode = scheduleCallback$1(schedulerPriorityLevel, performConcurrentWorkOnRoot.bind(null, root))")
-
-ifB--true异步更新:legacy模式-->D1
-ifB--初次渲染默认false,同步更新:concurrent模式-->D2
-
-
-D2-->D2-1("performConcurrentWorkOnRoot(root, didTimeout){<br> exitStatus = renderRootSync(root, lanes)}")
-
-D2-1-->D2-2("renderRootSync(root, lanes){<br> workLoopSync()}")
-
-D2-2--workLoopSync-->D2-3("performUnitOfWork(workInProgress)")
-```
+# 基础
+* react把每个fiber当成生成fiber最小单元,只要迭代所有fiber则到顶级Fiber时整颗FiberTree便生成了。
 
 ## 遍历流程
 Tree 构建的遍历顺序，它会以旧的fiber tree为蓝本，把每个fiber作为一个工作单元，自顶向下逐节点构造workInProgress tree（构建中的新fiber tree）:
@@ -105,63 +884,7 @@ flowchart TD
   A3Bif2--兄弟节点!null-->A3C2(将兄弟节点作为下一工作单元)-->A0Aif
 ```
 
-## fiber 协调过程
-```mermaid
-flowchart TD
-%% flowchart LR
-  A0A(ensureRootIsScheduled)--同步更新-->A0A1(performConcurrentWorkOnRoot)
-  A0A--异步更新-->A0A2(performSyncWorkOnRoot)
 
-  A0A2(performSyncWorkOnRoot)-->A2
-  A0A2-->D1
-  A2(renderRootSync)-->A3(workLoopSync)-->A0Aif
-
-  A0Aif{{workInProgress!=null?}}--不为null-->A4
-  A0Aif--为null-->endW(结束当前循环)
-
-subgraph render1[协调阶段:render是一个深度优先遍历的过程核心函数beginWork和completeUnitOfWork]
-
-  A4(performUnitOfWork:深度遍历)
-
-  A4--遍历到的节点执行beginWork创建子fiber节点-->A5(beginWork$1处理完返回next)
-
-  A4--若当前节点不存在子节点:next=null-->A6B(completeUnitOfWork)
-  
-  A5--current=null初始化:tag进入不同case-->A6A(case:HostComponent为例)-->A6A1(updateHostComponent$1)-->A6A2(reconcileChildren)--current!=null-->A6A3(reconcileChildFibers)
-
-  A5-.current!=null更新流程.->A51(attemptEarlyBailoutIfNoScheduledUpdate)-->A52(bailoutOnAlreadyFinishedWork)-->A53(cloneChildFibers)
-
-  A6B-->A6B1[为传入的节点执行completeWork:执行不同tag]--case:HostComponent并且current!=null-->A6B2(update流程:updateHostComponent)-->A6A1A(prepareUpdate:对比props)-->A6A1B(diffProperties)-->A6A1C(markUpdate:赋值更新的flags也叫update)
-
-  A6B1--case:HostComponent-current=null-->A6B3(为fiber创建dom:createInstance)
-  A6B3--case:HostComponent-current=null-->A6B4(add child dom:appendAllChildren)
-  A6B3-->A6B3A(createElement)-->A6B3B(document.createElement)
-
-  A53-->createWorkInProgress
-  A53-.tag类型进入不同case.->A6A
-end
-
-subgraph render2[构建FiberNode]
-  A6A3-.根据子节点类型创建fiebr节点.->B1(reconcileSingleElement) --> B2(createFiberFromElement) --> B3(createFiberFromTypeAndProps) --fiber.type也是在这里赋值--> B4(createFiber)--> B5(return new FiberNode)
-end
-
-subgraph beginWork2[beginWork第二阶段]
-  A6A2--current==null-->C1(mountChildFibers)-->C2(ChildReconciler)--case-->C3(placeSingleChild)
-end
-
-%% 提交阶段commit:15_3_commit阶段.md
-subgraph commit[提交阶段commit]
-  D1(commitRoot)-->D2(commitRootImpl)
-end
-
-%% layout阶段:15_3_commit阶段.md
-subgraph layout[layout阶段]
-  D2-->E1(commitLayoutEffect)
-end
-```
-
-# 基础
-* react把每个fiber当成生成fiber最小单元,只要迭代所有fiber则到顶级Fiber时整颗FiberTree便生成了。
 ## workInProgress 内存中构建的树和双缓存
 真实dom对应在内存中的Fiber节点形成Fiber树:current Fiber
 

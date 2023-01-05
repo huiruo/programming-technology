@@ -21,9 +21,12 @@
 
   <script src="./react.development18.js"></script>
   <script src="./react-dom.development18.js"></script>
-  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <!-- <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script> -->
+  <script src="./babel-6.26.0.js"></script>
+  <!-- <script src="./babel.min-6.26.0.js"></script> -->
   <div id="root"></div>
   <script type="text/babel">
+    console.log('=Babel:', Babel)
     function Test() {
       console.log('test-render')
       const [data, setData] = React.useState('改变我')
@@ -59,18 +62,11 @@
       )
     }
 
-    // <button onClick={onClickText2} className="btn">获取值</button>
-
+    const root = ReactDOM.createRoot(document.getElementById('root'))
+    console.log("=app=root:", root)
+    root.render(<Test />);
     // 17 写法
     // ReactDOM.render(<Test />, document.getElementById('root'))
-
-    // 18 写法
-    // const container = document.getElementById('root');
-    // const root = ReactDOM.createRoot(container);
-    const root = ReactDOM.createRoot(document.getElementById('root'))
-    root.render(<Test />);
-    // ReactDOM.createRoot(<Test />, document.getElementById('root'))
-  </script>
   </script>
 </body>
 

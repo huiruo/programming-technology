@@ -20058,8 +20058,9 @@
       // won't update its child set by applying minimal side-effects. Instead,
       // we will add them all to the child before it gets rendered. That means
       // we can optimize this reconciliation pass by not tracking side-effects.
-      console.log('%c=reconcileChildren mount', 'yellow');
+      console.log('%c=reconcileChildren mount', 'blueviolet');
       workInProgress.child = mountChildFibers(workInProgress, null, nextChildren, renderLanes);
+      console.log('%c=reconcileChildren mount 返回值workInProgress.child', 'blueviolet', workInProgress.child);
     } else {
       // If the current child is the same as the work in progress, it means that
       // we haven't yet started any work on these children. Therefore, we use
@@ -21111,7 +21112,7 @@
       if (getIsHydrating() && hasId) {
         pushMaterializedTreeId(workInProgress);
       }
-      console.log('=reconcileChildren 12')
+      console.log('%c=reconcileChildren 12:重点，mountIndeterminateComponent调用reconcileChildren', 'color:red')
       reconcileChildren(null, workInProgress, value, renderLanes);
 
       {
@@ -26681,7 +26682,7 @@
   let workInProgressNums = 1
   function workLoopSync() {
     // Already timed out, so perform work without checking if we need to yield.
-    console.log('%c=render开始了!', 'color:red', 'workLoopSync在while循环中调用performUnitOfWork(),循环开始', workInProgress !== null, { workInProgress });
+    console.log('%c=render开始了!', 'color:red', 'workLoopSync在while循环中调用performUnitOfWork()循环开始', workInProgress !== null, { workInProgress });
     while (workInProgress !== null) {
       console.log('%c=workLoopSync循环调用performUnitOfWork==start:', 'color:red', '循环中:', { getFiberName: getFiberName(workInProgress), workInProgressNums, workInProgress });
       console.log('循环中:workInProgress.stateNode:', workInProgress.stateNode, 'fiber的实例，类组件场景下，是组件的类，HostComponent场景，是dom元素');
@@ -27738,6 +27739,7 @@
         actQueue.push(callback);
         return fakeActCallbackNode;
       } else {
+        console.log('%c==render阶段准备：scheduleCallback$1调用scheduleUpdateOnFiber()==', 'color:cyan')
         return scheduleCallback(priorityLevel, callback);
       }
     }
@@ -28315,9 +28317,8 @@
 
   var createFiber = function (tag, pendingProps, key, mode) {
     // $FlowFixMe: the shapes are exact here but Flow doesn't like constructors
-    console.log('%c=createFiber中调用 new FiberNode-FiberNode返回值:', 'color:yellow')
     var fiberNode = new FiberNode(tag, pendingProps, key, mode)
-    console.log('%c=返回值fiberNode:', 'color:grey', { fiberNode });
+    console.log('%c=createFiber中调用 new FiberNode-FiberNode返回值:', 'color:grey', { fiberNode })
     return fiberNode;
   };
 
@@ -28358,6 +28359,7 @@
       // reclaim the extra memory if needed.
       console.log('==createWorkInProgress-->,没有就创建一个')
       workInProgress = createFiber(current.tag, pendingProps, current.key, current.mode);
+      console.log('==createWorkInProgress-->,没有就创建一个返回值', workInProgress)
       workInProgress.elementType = current.elementType;
       workInProgress.type = current.type;
       workInProgress.stateNode = current.stateNode;
@@ -28818,7 +28820,7 @@
   }
 
   function FiberRootNode(containerInfo, tag, hydrate, identifierPrefix, onRecoverableError) {
-    console.log('==FiberRootNode 是初始化相关只调用一次===')
+    console.log('=应用开头=FiberRootNode是初始化相关只调用一次===')
     this.tag = tag;
     this.containerInfo = containerInfo;
     this.pendingChildren = null;
@@ -28880,6 +28882,7 @@
     // single type, like a DynamicHostConfig that is defined by the renderer.
     identifierPrefix, onRecoverableError, transitionCallbacks) {
     var root = new FiberRootNode(containerInfo, tag, hydrate, identifierPrefix, onRecoverableError);
+    console.log('=应用开头=FiberRootNode是初始化相关只调用一次,返回值', root)
     // stateNode is any.
 
     var uninitializedFiber = createHostRootFiber(tag, isStrictMode);
@@ -29002,7 +29005,7 @@
   function createContainer(containerInfo, tag, hydrationCallbacks, isStrictMode, concurrentUpdatesByDefaultOverride, identifierPrefix, onRecoverableError, transitionCallbacks) {
     var hydrate = false;
     var initialChildren = null;
-    console.log('初始/更新-->FiberRoot:a-->createContainer')
+    console.log('=应用开头=-->return createFiberRoot(containerInfo')
     return createFiberRoot(containerInfo, tag, hydrate, initialChildren, hydrationCallbacks, isStrictMode, concurrentUpdatesByDefaultOverride, identifierPrefix, onRecoverableError);
   }
   function createHydrationContainer(initialChildren, // TODO: Remove `callback` when we delete legacy mode.
@@ -29455,7 +29458,7 @@
     };
 
   function ReactDOMRoot(internalRoot) {
-    console.log('%c=一切开始2:', 'color:red', 'ReactDOMRoot', { internalRoot })
+    console.log('=应用开头=ReactDOMRoot', internalRoot)
     this._internalRoot = internalRoot;
   }
 
@@ -29558,7 +29561,7 @@
       }
     }
 
-    console.log('%c=一切开始1:', 'color:red', { createRoot: container, options })
+    console.log('%c=一切开始1:createRoot(', 'color:red', { createRoot: container, options })
     var root = createContainer(container, ConcurrentRoot, null, isStrictMode, concurrentUpdatesByDefaultOverride, identifierPrefix, onRecoverableError);
     markContainerAsRoot(root.current, container);
     var rootContainerElement = container.nodeType === COMMENT_NODE ? container.parentNode : container;
@@ -29741,6 +29744,7 @@
         false, // concurrentUpdatesByDefaultOverride,
         '', // identifierPrefix
         noopOnRecoverableError);
+      console.log('=应用开头=FiberRoot创建之后赋值给_root并加属性', root)
       // 添加属性 此时maybeRoot才会有值
       container._reactRootContainer = _root;
       // 标记
