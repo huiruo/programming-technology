@@ -15686,7 +15686,7 @@
       // We treat the ambiguous cases above the same.
       var isUnkeyedTopLevelFragment = typeof newChild === 'object' && newChild !== null && newChild.type === REACT_FRAGMENT_TYPE && newChild.key === null;
 
-      debugger
+      // debugger
       console.log('%c=reconcileChildFibers A', 'blueviolet');
 
       if (isUnkeyedTopLevelFragment) {
@@ -21002,8 +21002,6 @@
       workInProgress.flags |= Placement;
     }
 
-    // debugger
-
     var props = workInProgress.pendingProps;
     var context;
 
@@ -21037,6 +21035,7 @@
 
       setIsRendering(true);
       ReactCurrentOwner$1.current = workInProgress;
+      // debugger
       console.log(`%c=探究初始和hook=mountIndeterminateComponent调用renderWithHooks 1`, 'color:blueviolet', { workInProgress, Component, props, context, renderLanes })
       value = renderWithHooks(null, workInProgress, Component, props, context, renderLanes);
       console.log(`%c=探究初始和hook=mountIndeterminateComponent调用renderWithHooks 返回值`, 'color:blueviolet', { value })
@@ -21122,6 +21121,9 @@
       if (getIsHydrating() && hasId) {
         pushMaterializedTreeId(workInProgress);
       }
+
+
+      // debugger
       console.log('%c=reconcileChildren 12:重点，mountIndeterminateComponent调用reconcileChildren', 'color:red')
       reconcileChildren(null, workInProgress, value, renderLanes);
 
@@ -25961,6 +25963,8 @@
 
         root.finishedWork = finishedWork;
         root.finishedLanes = lanes;
+
+        // debugger
         console.log(`%c=commit阶段=前=render阶段结束=performConcurrentWorkOnRoot调用finishConcurrentRender-->commitRoot`, 'color:cyan')
         finishConcurrentRender(root, exitStatus, lanes);
       }

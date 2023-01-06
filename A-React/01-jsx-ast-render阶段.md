@@ -668,8 +668,8 @@ function beginWork(current, workInProgress, renderLanes) {
 ### 重点：code函数初始化在renderWithHooks这里执行
 
 mountIndeterminateComponent 
-* 调用  renderWithHooks
-* 执行 reconcileChildren(null, workInProgress, value, renderLanes)
+* 调用  renderWithHooks 生成 value
+* 执行 reconcileChildren(null, workInProgress, value, renderLanes) 参数value
 
 
 关键的函数 renderWithHooks；而在 renderWithHooks 中，我们会根据组件处于不同的状态，给 ReactCurrentDispatcher.current 挂载不同的 dispatcher 。而在first paint 时，挂载的是HooksDispatcherOnMountInDEV
@@ -771,6 +771,79 @@ var ReactElement = function (type, key, ref, self, source, owner, props) {
     return element;
 }
 ```
+
+## 第三次 beginWork
+此时构建 code() 生成的节点
+```javaScript
+      case HostComponent:
+        console.log(`%c=beginWork()=end 7 updateHostComponent$1,即原生 DOM 组件对应的 Fiber节点:`, 'color:magenta', { type: workInProgress.type })
+        return updateHostComponent$1(current, workInProgress, renderLanes);
+```
+
+此时 workInProgress
+```
+actualDuration:0
+actualStartTime:-1
+alternate:null
+child:null
+childLanes:0
+deletions: null
+dependencies: null
+elementType:"div"
+flags: 0
+index : 0
+key : null
+lanes : 0
+memoizedProps:null
+memoizedState:null
+mode:1
+pendingProps:{id: 'div1', className: 'c1', children: Array(4)}
+ref:null
+return:FiberNode {tag: 0, key: null, stateNode: null, elementType: ƒ, type: ƒ, …}
+selfBaseDuration:0,
+sibling:null
+stateNode:null
+subtreeFlags:0
+tag:5
+treeBaseDuration:0
+type:"div"
+updateQueue:null
+```
+
+```javaScript
+function updateHostComponent$1(current, workInProgress, renderLanes) {
+  pushHostContext(workInProgress);
+
+  if (current === null) {
+    tryToClaimNextHydratableInstance(workInProgress);
+  }
+
+  var type = workInProgress.type;
+  var nextProps = workInProgress.pendingProps;
+  var prevProps = current !== null ? current.memoizedProps : null;
+  var nextChildren = nextProps.children;
+  var isDirectTextChild = shouldSetTextContent(type, nextProps);
+
+  if (isDirectTextChild) {
+    // We special case a direct text child of a host node. This is a common
+    // case. We won't handle it as a reified child. We will instead handle
+    // this in the host environment that also has access to this prop. That
+    // avoids allocating another HostText fiber and traversing it.
+    nextChildren = null;
+  } else if (prevProps !== null && shouldSetTextContent(type, prevProps)) {
+    // If we're switching from a direct text child to a normal child, or to
+    // empty, we need to schedule the text content to be reset.
+    workInProgress.flags |= ContentReset;
+  }
+
+  markRef$1(current, workInProgress);
+  console.log('=reconcileChildren 11')
+  reconcileChildren(current, workInProgress, nextChildren, renderLanes);
+  return workInProgress.child;
+}
+```
+
+
 
 ### React.createElement 旧api
 https://cloud.tencent.com/developer/article/2135083

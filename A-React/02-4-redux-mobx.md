@@ -54,6 +54,13 @@ export { Provider, ReactReduxContext, connect, useDispatch, createDispatchHook, 
 
 ## 总结
 
+1 为什么要在 root 根组件上使用 react-redux 的 Provider 组件包裹?
+2 react-redux 是怎么和 redux 契合，做到 state 改变更新视图的呢?
+3 provide 用什么方式存放当前的 redux 的 store, 又是怎么传递给每一个需要订阅 state 的组件的?
+4 connect 是怎么样连接我们的业务组件，然后更新已经订阅组件的呢?
+5 connect 是怎么通过第一个参数mapStateToProps，来订阅与之对应的 state 的呢?
+6 connect 怎么样将 props，和 redux的 state 合并的?
+
 react 中能更新 redux 的 store，并能监听 store 的变化并通知 react 的相关组件更新，从而能让 react 将状态放在外部管理（有利于 model 集中管理，能利用 redux 单项数据流架构，数据流易预测易维护，也极大的方便了任意层级组件间通信
 ![](./img-react/redux-workflow.png)
 
