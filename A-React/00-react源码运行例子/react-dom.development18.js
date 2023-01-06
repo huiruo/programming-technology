@@ -15686,6 +15686,9 @@
       // We treat the ambiguous cases above the same.
       var isUnkeyedTopLevelFragment = typeof newChild === 'object' && newChild !== null && newChild.type === REACT_FRAGMENT_TYPE && newChild.key === null;
 
+      debugger
+      console.log('%c=reconcileChildFibers A', 'blueviolet');
+
       if (isUnkeyedTopLevelFragment) {
         newChild = newChild.props.children;
       } // Handle object types
@@ -20803,10 +20806,15 @@
         return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
       }
 
-      console.log('=reconcileChildren 9')
+      // debugger
+      console.log('%c=updateHostRoot:构建之后workInProgress.child', 'color:black', workInProgress)
       reconcileChildren(current, workInProgress, nextChildren, renderLanes);
+      console.log('%c=updateHostRoot:构建之后workInProgress.child', 'color:black', workInProgress)
     }
 
+    // console.log('workInProgress', workInProgress, root)
+    // debugger
+    console.log('%c=updateHostRoot:最后返回workInProgress.child', 'color:black', workInProgress.child)
     return workInProgress.child;
   }
 
@@ -20993,6 +21001,8 @@
 
       workInProgress.flags |= Placement;
     }
+
+    // debugger
 
     var props = workInProgress.pendingProps;
     var context;
@@ -22477,6 +22487,7 @@
       }
     }
 
+
     // update时：如果current存在可能存在优化路径，可以复用current（即上一次更新的Fiber节点）
     if (current !== null) {
       console.log('%c=beginWork()===start1-更新', 'color:magenta', { getFiberName: getFiberName(workInProgress), current, renderLanes, workInProgress })
@@ -22541,14 +22552,13 @@
     // sometimes bails out later in the begin phase. This indicates that we should
     // move this assignment out of the common path and into each branch.
 
-
     workInProgress.lanes = NoLanes;
     console.log('%c=beginWork()===start1-初始化', 'color:magenta', { getFiberName: getFiberName(workInProgress), current, renderLanes, workInProgress })
     switch (workInProgress.tag) {
       case IndeterminateComponent:
         {
-          console.log('%c=beginWork()==end 2 mountIndeterminateComponent', 'color:magenta')
-          console.log(`%c=探究初始和hook=调用mountIndeterminateComponent`, 'color:blueviolet')
+          console.log('%c=beginWork()==end 2 mountIndeterminateComponent', 'color:magenta', workInProgress)
+          console.log(`%c=探究初始和hook=调用mountIndeterminateComponent`, 'color:blueviolet', workInProgress.type)
           return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
         }
 
@@ -22579,6 +22589,7 @@
         }
 
       case HostRoot:
+        console.log('%c=beginWork()=end 6第一次会走这里初始化workInProgress', 'color:magenta', { current, workInProgress })
         console.log('%c=beginWork()=end 6 updateHostRoot', 'color:magenta')
         return updateHostRoot(current, workInProgress, renderLanes);
 
@@ -25726,7 +25737,6 @@
       return;
     } // We use the highest priority lane to represent the priority of the callback.
 
-
     var newCallbackPriority = getHighestPriorityLane(nextLanes); // Check if there's an existing task. We may be able to reuse it.
 
     var existingCallbackPriority = root.callbackPriority;
@@ -25875,6 +25885,8 @@
     // bug we're still investigating. Once the bug in Scheduler is fixed,
     // we can remove this, since we track expiration ourselves.
 
+    // console.log('workInProgress', workInProgress, root)
+    // debugger
 
     var shouldTimeSlice = !includesBlockingLane(root, lanes) && !includesExpiredLane(root, lanes) && (!didTimeout);
     console.log('==render阶段准备:performConcurrentWorkOnRoot调用renderRootSync():同步更新concurrent模式:', { shouldTimeSlice });
@@ -26388,6 +26400,7 @@
       }
     }
 
+    console.log('=render阶段:prepareFreshStack=处理workInProgressRoot:workInProgressRoot = root')
     workInProgressRoot = root;
     var rootWorkInProgress = createWorkInProgress(root.current, null);
     workInProgress = rootWorkInProgress;
@@ -26546,6 +26559,7 @@
   }
 
   function renderRootSync(root, lanes) {
+
     var prevExecutionContext = executionContext;
     executionContext |= RenderContext;
     var prevDispatcher = pushDispatcher(); // If the root or lanes have changed, throw out the existing stack
@@ -26567,10 +26581,16 @@
 
           movePendingFibersToMemoized(root, lanes);
         }
+
       }
 
+
+      // console.log('workInProgress', workInProgress, root)
+      // debugger
+      console.log('render调用 prepareFreshStack前', workInProgress)
       workInProgressTransitions = getTransitionsForLanes();
       prepareFreshStack(root, lanes);
+      console.log('render调用 prepareFreshStack后', workInProgress)
     }
 
     {
@@ -28360,6 +28380,7 @@
       console.log('==createWorkInProgress-->,没有就创建一个')
       workInProgress = createFiber(current.tag, pendingProps, current.key, current.mode);
       console.log('==createWorkInProgress-->,没有就创建一个返回值', workInProgress)
+      // debugger
       workInProgress.elementType = current.elementType;
       workInProgress.type = current.type;
       workInProgress.stateNode = current.stateNode;

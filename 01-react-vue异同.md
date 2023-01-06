@@ -18,6 +18,9 @@ react: setState(x);
 4. 模板引擎和生成虚拟dom方式不同;
 
 ## vue模板引擎
+vue和react同样采用的是虚拟dom 运行时+编译时 都是找出差异修改;
+vue在模板的compile-time做了的优化:比如提升不变的vnode(静态提升)，以及blocktree配合patchflag靶向更新
+
 编译模板阶段生成render函数:
 如果有配置，直接使用配置的render函数，如果没有，使用运行时编译器，把模板编译成render函数。
 
@@ -39,6 +42,13 @@ hoistStatic其会递归ast并发现一些不会变的节点与属性，给他们
 
 
 4. 组件挂载前onBeforeMount,renderComponentRoot 执行构建ast生成的render() 生成vnode
+
+
+
+注意,如果实在webpack：
+```
+用vue-loader将.vue文件编译成js，然后使用render函数渲染， 打包的时候就编译成了render函数需要的格式，不需要在客户端编译：
+```
 ```mermaid
 flowchart LR
 
@@ -445,7 +455,12 @@ function $set(data, key, value) {
 
 # 2.react 特点
 1. 模板引擎:jsx
-react初始化的时候使用bable 处理jsx模板组件，得到ast树的结构,然后再进一步构建fiber树
+vue和react同样采用的是虚拟dom 运行时+编译时 都是找出差异修改;
+```mermaid
+flowchart LR
+
+A1(jsx的Fn组件)-->A2(ast tree)--转化-->A3(生成code函数)--beginWork开始执行code-->A4(fiber tree)-->A5(DOM)
+```
 
 2. 配合ts比较友好,函数式编程是用函数的组合来进行编程,带来的是组件化开发
 ```

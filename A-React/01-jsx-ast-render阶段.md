@@ -197,8 +197,306 @@ function createElement(type, config, children) {
 }
 ```
 
-### beginWork
-首次beginWork进入case IndeterminateComponent 执行 mountIndeterminateComponent(),可见深度遍历从父级组件开始
+
+## workInProgress 构建
+
+```javaScript
+  function createWorkInProgress(current, pendingProps) {
+    var workInProgress = current.alternate;
+    // 区分是在mount时还是在update时
+    if (workInProgress === null) {
+      // We use a double buffering pooling technique because we know that we'll
+      // only ever need at most two versions of a tree. We pool the "other" unused
+      // node that we're free to reuse. This is lazily created to avoid allocating
+      // extra objects for things that are never updated. It also allow us to
+      // reclaim the extra memory if needed.
+      console.log('==createWorkInProgress-->,没有就创建一个')
+      workInProgress = createFiber(current.tag, pendingProps, current.key, current.mode);
+      console.log('==createWorkInProgress-->,没有就创建一个返回值', workInProgress)
+      debugger
+      workInProgress.elementType = current.elementType;
+      workInProgress.type = current.type;
+      workInProgress.stateNode = current.stateNode;
+
+      {
+        // DEV-only fields
+        workInProgress._debugSource = current._debugSource;
+        workInProgress._debugOwner = current._debugOwner;
+        workInProgress._debugHookTypes = current._debugHookTypes;
+      }
+      console.log('==createWorkInProgress-->,workInProgress.alternate指定为current')
+      workInProgress.alternate = current;
+      current.alternate = workInProgress;
+    } else {
+      // 复用属性
+      workInProgress.pendingProps = pendingProps; // Needed because Blocks store data on type.
+
+      workInProgress.type = current.type; // We already have an alternate.
+      // Reset the effect tag.
+
+      workInProgress.flags = NoFlags; // The effects are no longer valid.
+
+      workInProgress.subtreeFlags = NoFlags;
+      workInProgress.deletions = null;
+
+      {
+        // We intentionally reset, rather than copy, actualDuration & actualStartTime.
+        // This prevents time from endlessly accumulating in new commits.
+        // This has the downside of resetting values for different priority renders,
+        // But works for yielding (the common case) and should support resuming.
+        workInProgress.actualDuration = 0;
+        workInProgress.actualStartTime = -1;
+      }
+    } // Reset all effects except static ones.
+    // Static effects are not specific to a render.
+
+
+    workInProgress.flags = current.flags & StaticMask;
+    // 复用属性
+    workInProgress.childLanes = current.childLanes;
+    workInProgress.lanes = current.lanes;
+    workInProgress.child = current.child;
+    workInProgress.memoizedProps = current.memoizedProps;
+    workInProgress.memoizedState = current.memoizedState;
+    workInProgress.updateQueue = current.updateQueue; // Clone the dependencies object. This is mutated during the render phase, so
+    // it cannot be shared with the current fiber.
+
+    var currentDependencies = current.dependencies;
+    workInProgress.dependencies = currentDependencies === null ? null : {
+      lanes: currentDependencies.lanes,
+      firstContext: currentDependencies.firstContext
+    }; // These will be overridden during the parent's reconciliation
+
+    workInProgress.sibling = current.sibling;
+    workInProgress.index = current.index;
+    workInProgress.ref = current.ref;
+
+    {
+      workInProgress.selfBaseDuration = current.selfBaseDuration;
+      workInProgress.treeBaseDuration = current.treeBaseDuration;
+    }
+
+    {
+      workInProgress._debugNeedsRemount = current._debugNeedsRemount;
+
+      switch (workInProgress.tag) {
+        case IndeterminateComponent:
+        case FunctionComponent:
+        case SimpleMemoComponent:
+          workInProgress.type = resolveFunctionForHotReloading(current.type);
+          break;
+
+        case ClassComponent:
+          workInProgress.type = resolveClassForHotReloading(current.type);
+          break;
+
+        case ForwardRef:
+          workInProgress.type = resolveForwardRefForHotReloading(current.type);
+          break;
+      }
+    }
+
+    return workInProgress;
+  }
+```
+
+赋值：调用 prepareFreshStack
+```javaScript
+  function renderRootSync(root, lanes) {
+
+    var prevExecutionContext = executionContext;
+    executionContext |= RenderContext;
+    var prevDispatcher = pushDispatcher(); // If the root or lanes have changed, throw out the existing stack
+    // and prepare a fresh one. Otherwise we'll continue where we left off.
+
+    if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
+      {
+        if (isDevToolsPresent) {
+          var memoizedUpdaters = root.memoizedUpdaters;
+
+          if (memoizedUpdaters.size > 0) {
+            restorePendingUpdaters(root, workInProgressRootRenderLanes);
+            memoizedUpdaters.clear();
+          } // At this point, move Fibers that scheduled the upcoming work from the Map to the Set.
+          // If we bailout on this work, we'll move them back (like above).
+          // It's important to move them now in case the work spawns more work at the same priority with different updaters.
+          // That way we can keep the current update and future updates separate.
+
+
+          movePendingFibersToMemoized(root, lanes);
+        }
+
+      }
+
+      workInProgressTransitions = getTransitionsForLanes();
+
+      console.log('workInProgress', workInProgress, root)
+      debugger
+      console.log('render调用 prepareFreshStack前',workInProgress)
+      prepareFreshStack(root, lanes);
+      console.log('workInProgress', workInProgress, root)
+      console.log('render调用 prepareFreshStack后',workInProgress)
+    }
+```
+
+### workInProgress 构建2：beginWork 第一次会调用updateHostRoot进行初始化:updateHostRoot
+
+第二次才走 mountIndeterminateComponent 执行code()函数,此时的workInProgress.type 才有值
+```javaScript
+  function beginWork(current, workInProgress, renderLanes) {
+    console.log('workInProgress', workInProgress, root)
+    debugger
+    workInProgress.lanes = NoLanes;
+    console.log('%c=beginWork()===start1-初始化', 'color:magenta', { getFiberName: getFiberName(workInProgress), current, renderLanes, workInProgress })
+    switch (workInProgress.tag) {
+      case IndeterminateComponent:
+        {
+          console.log('%c=beginWork()==end 2 mountIndeterminateComponent', 'color:magenta', workInProgress)
+          console.log(`%c=探究初始和hook=调用mountIndeterminateComponent`, 'color:blueviolet', workInProgress.type)
+          return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
+      }
+      case HostRoot:
+        console.log('%c=beginWork()=end 6第一次会走这里初始化workInProgress', 'color:magenta')
+        console.log('%c=beginWork()=end 6 updateHostRoot', 'color:magenta')
+        return updateHostRoot(current, workInProgress, renderLanes);
+    }
+  }
+```
+
+### 重点构建子节点：
+reconcileChildren(current, workInProgress, nextChildren, renderLanes)-->reconcileChildren
+
+```javaScript
+function updateHostRoot(current, workInProgress, renderLanes) {
+  pushHostRootContext(workInProgress);
+
+  if (current === null) {
+    throw new Error('Should have a current fiber. This is a bug in React.');
+  }
+
+  var nextProps = workInProgress.pendingProps;
+  var prevState = workInProgress.memoizedState;
+  var prevChildren = prevState.element;
+  cloneUpdateQueue(current, workInProgress);
+  processUpdateQueue(workInProgress, nextProps, null, renderLanes);
+  var nextState = workInProgress.memoizedState;
+  var root = workInProgress.stateNode;
+  // being called "element".
+
+
+  var nextChildren = nextState.element;
+
+  if (prevState.isDehydrated) {
+  } else {
+      // Root is not dehydrated. Either this is a client-only root, or it
+      // already hydrated.
+      resetHydrationState();
+
+      if (nextChildren === prevChildren) {
+        return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
+      }
+
+      console.log('=reconcileChildren 9')
+      debugger
+      reconcileChildren(current, workInProgress, nextChildren, renderLanes);
+      console.log('%c=updateHostRoot:构建之后workInProgress.child', 'color:black', { child })
+  }
+  console.log('%c=updateHostRoot:最后返回workInProgress.child', 'color:black', workInProgress.child)
+
+  return workInProgress.child;
+}
+```
+
+```javaScript
+function reconcileChildren(current, workInProgress, nextChildren, renderLanes) {
+  if (current === null) {
+    // If this is a fresh new component that hasn't been rendered yet, we
+    // won't update its child set by applying minimal side-effects. Instead,
+    // we will add them all to the child before it gets rendered. That means
+    // we can optimize this reconciliation pass by not tracking side-effects.
+    console.log('%c=reconcileChildren mount', 'blueviolet');
+    workInProgress.child = mountChildFibers(workInProgress, null, nextChildren, renderLanes);
+    console.log('%c=reconcileChildren mount 返回值workInProgress.child', 'blueviolet', workInProgress.child);
+  } else {
+    // If the current child is the same as the work in progress, it means that
+    // we haven't yet started any work on these children. Therefore, we use
+    // the clone algorithm to create a copy of all the current children.
+    // If we had any progressed work already, that is invalid at this point so
+    // let's throw it out.
+    console.log('%c=reconcileChildren update', 'yellow');
+    workInProgress.child = reconcileChildFibers(workInProgress, current.child, nextChildren, renderLanes);
+  }
+}
+```
+
+很长的函数: reconcileChildren->reconcileChildFibers
+```javaScript
+  function ChildReconciler(shouldTrackSideEffects) {
+    // 省略
+    function reconcileChildFibers(returnFiber, currentFirstChild, newChild, lanes) {
+      // This function is not recursive.
+      // If the top level item is an array, we treat it as a set of children,
+      // not as a fragment. Nested arrays on the other hand will be treated as
+      // fragment nodes. Recursion happens at the normal flow.
+      // Handle top level unkeyed fragments as if they were arrays.
+      // This leads to an ambiguity between <>{[...]}</> and <>...</>.
+      // We treat the ambiguous cases above the same.
+      var isUnkeyedTopLevelFragment = typeof newChild === 'object' && newChild !== null && newChild.type === REACT_FRAGMENT_TYPE && newChild.key === null;
+
+      console.log('%c=reconcileChildFibers A', 'blueviolet');
+
+      if (isUnkeyedTopLevelFragment) {
+        newChild = newChild.props.children;
+      } // Handle object types
+
+
+      if (typeof newChild === 'object' && newChild !== null) {
+        switch (newChild.$$typeof) {
+          case REACT_ELEMENT_TYPE:
+            return placeSingleChild(reconcileSingleElement(returnFiber, currentFirstChild, newChild, lanes));
+
+          case REACT_PORTAL_TYPE:
+            return placeSingleChild(reconcileSinglePortal(returnFiber, currentFirstChild, newChild, lanes));
+
+          case REACT_LAZY_TYPE:
+            var payload = newChild._payload;
+            var init = newChild._init; // TODO: This function is supposed to be non-recursive.
+
+            return reconcileChildFibers(returnFiber, currentFirstChild, init(payload), lanes);
+        }
+
+        if (isArray(newChild)) {
+          return reconcileChildrenArray(returnFiber, currentFirstChild, newChild, lanes);
+        }
+
+        if (getIteratorFn(newChild)) {
+          return reconcileChildrenIterator(returnFiber, currentFirstChild, newChild, lanes);
+        }
+
+        throwOnInvalidObjectType(returnFiber, newChild);
+      }
+
+      if (typeof newChild === 'string' && newChild !== '' || typeof newChild === 'number') {
+        return placeSingleChild(reconcileSingleTextNode(returnFiber, currentFirstChild, '' + newChild, lanes));
+      }
+
+      {
+        if (typeof newChild === 'function') {
+          warnOnFunctionType(returnFiber);
+        }
+      } // Remaining cases are all treated as empty.
+
+
+      return deleteRemainingChildren(returnFiber, currentFirstChild);
+    }
+
+    return reconcileChildFibers;
+  }
+```
+
+
+## beginWork第二次之case IndeterminateComponent
+第二次beginWork进入case IndeterminateComponent 执行 mountIndeterminateComponent(),可见深度遍历从父级组件开始
 
 首先要注意的是，虽然 App 是一个 FunctionComponent，但是在 first paint 的时候，React 判断其为 IndeterminateComponent
 
