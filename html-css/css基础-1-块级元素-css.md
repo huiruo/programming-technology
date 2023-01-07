@@ -15,33 +15,24 @@ padding 是用来隔开元素与内容的间隔，让内容（文字）与（包
 ###  2-1.box-sizing
 通过修改box-sizing 属性可以改变计算盒子大小的方式
 
-语法: box-sizing: content-box|border-box|inherit:
-```
-默认值:	boxizing: content-box;
-```
 W3C的标准Box Model: 元素的宽度(width) 和高度(height)计算方式如下：
 ```
 width(宽度) + padding(内边距) + border(边框) = 元素实际宽度
 height(高度) + padding(内边距) + border(边框) = 元素实际高度
 ```
 
-IE)传统下Box Mode:
-box-sizing:border-box;
+语法: box-sizing: content-box|border-box|inherit:
 ```
-指定盒模型为 IE模型（怪异模式），设置 border、padding 不会影响元素 width 与 height 的尺寸，即 border 与 padding 由元素已设空间转变。
-
-即空间还是这个空间，只是将部分空余的地方，转变成了其他空间用法而已，为内部转变。
-
-content = width - border - padding;
+默认值:	boxizing: content-box;
 ```
 
-进一步解析：
+
+### IE怪异盒模型、box-sizing: border-box;
 ```html
 border-box：指定盒模型为 IE模型（怪异模式），设置 border、padding 不会影响元素 width 与 height 的尺寸，
 即 border 与 padding 由元素已设空间转变。
 即空间还是这个空间，只是将部分空余的地方，转变成了其他空间用法而已，为内部转变
 
-IE怪异盒模型、box-sizing: border-box;
 <style type="text/css">
 .box {
   width: 200px;
