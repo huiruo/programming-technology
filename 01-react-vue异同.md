@@ -20,11 +20,17 @@ react: setState(x);
 ## vue模板引擎
 一方面从初始化 data 开始，到解析 template 模版，进行依赖收集。另一方面能够从 data 改变，通知渲染 Effect 更新，到页面变化；
 
+
 vue和react同样采用的是虚拟dom 运行时+编译时 都是找出差异修改;
 vue在模板的compile-time做了的优化:比如提升不变的vnode(静态提升)，以及blocktree配合patchflag靶向更新
 
 编译模板阶段生成render函数:
 如果有配置，直接使用配置的render函数，如果没有，使用运行时编译器，把模板编译成render函数。
+
+注意:如果在webpack：
+```
+用vue-loader将.vue文件编译成js，然后使用render函数渲染， 打包的时候就编译成了render函数需要的格式，不需要在客户端编译;
+```
 
 在执行render函数的过程中会搜集所有依赖，将来依赖发生变换时会出现执行updateCompontent函数。
 
@@ -42,15 +48,8 @@ hoistStatic其会递归ast并发现一些不会变的节点与属性，给他们
 
 3. generate根据变换后的转换AST生成render()函数
 
-
-4. 组件挂载前onBeforeMount,renderComponentRoot 执行构建ast生成的render() 生成vnode
-
-
-
-注意,如果实在webpack：
-```
-用vue-loader将.vue文件编译成js，然后使用render函数渲染， 打包的时候就编译成了render函数需要的格式，不需要在客户端编译：
-```
+4. renderComponentRoot 执行构建ast生成的render() 生成vnode
+	组件挂载前:onBeforeMount在什么时候执行?
 ```mermaid
 flowchart LR
 
@@ -75,7 +74,7 @@ C2--2-->D1("创建好vnode,调用patch进行组件内容的渲染")--path之初�
 
 D2-->D3("mountChildren(vnode.children,..)进行递归")--vnode.children递归调用-->D5("patch(null,child,container")
 
-C2--3渲染完毕最后-->E1("开始处理生命周期函数")--1-->E21("onMounted()")
+C2--3渲染完毕最后-->E1("处理生命周期函数")--1-->E21("onMounted()")
 
 E1--2-->E2(nextTick)
 ```
@@ -388,7 +387,37 @@ const componentUpdateFn = () => {
 
 <br />
 
-## 其他异同点
+# vue data更新
+```mermaid
+flowchart TD
+A1("set(target, key, value, receiver)")--hadKey=true-->A2("trigger(target,'set',key,value,oldValue)")-->A4
+A1--hadKey=true-->A3("trigger(target,'set',key,value,oldValue)")-->A4
+
+A4("trigger(target,type,key,newValue,..")--deps.length=1比如对象-->B1("triggerEffects(deps[0], eventInfo)")
+
+A4--不等于1比如add数组-->B2("triggerEffects(createDep(effects),eventInfo)")
+
+B1-->B12("triggerEffects(createDep(effects),eventInfo)")
+B2-->B13("triggerEffects(deps[0], eventInfo)")
+
+B12--遍历dep中的effect逐一triggerEffect来执行副作用-->B3("triggerEffect(effect,debuggerEventExtraInfo)")
+B13--遍历dep中的effect逐一triggerEffect来执行副作用-->B3("triggerEffect(effect,debuggerEventExtraInfo)")
+
+B3("effect.scheduler()正式执行副作用")--调度执行-->C1
+
+C1("queueJob(job)")-->C2("queueFlush()")-->C3("flushJobs(seen)重点")--循环queue-->C4("callWithErrorHandling(job,null,14),job就是effect.run()")--开始走渲染流程-->Z1
+
+%% 渲染流程
+Z1("componentUpdateFn()")--1创建vnode-->V3("renderComponentRoot(instance)返回vnode")-->V4
+
+V4("render.call(proxyToUse,..)调用ast生成的render生成vnode")-->C41("执行ast render函数也会触发依赖收集")
+
+Z1--2-->D1("创建好vnode,调用patch进行组件内容的渲染")--path之初始化:shapeFlag&6-->D12("processComponent(n1, n2")-->D2("mountElement(n2, container")
+
+Z1--3渲染完毕最后-->E1("处理生命周期函数")
+```
+
+# 其他异同点
 5. 由于 Vue 是通过 template 模版进行编译的，所以在编译的时候可以很好对静态节点进行分析然后进行打补丁标记，然后在 Diff 的时候，Vue2 是判断如果是静态节点则跳过过循环对比，而 Vue3 则是把整个静态节点进行提升处理，Diff 的时候是不过进入循环的，所以 Vue3 比 Vue2 的 Diff 性能更高效。而 React 因为是通过 JSX 进行编译的，是无法进行静态节点分析的，所以 React 在对静态节点处理这一块是要逊色的。
 
 6. 渲染/更新方式,见下面扩展
