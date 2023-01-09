@@ -634,7 +634,7 @@ var Vue = (function (exports) {
           cleanupEffect(this);
         }
         // 执行过程中重新收集依赖标记新的 dep 为 new
-        console.log('依赖收集==>b,run方法内部为了触发一下依赖收集')
+        console.log(`%c=ReactiveEffect的run函数==run方法内部为了触发一下依赖收集,执行:${this.fn.name}`, 'color:yellow')
         return this.fn();
       }
 
@@ -695,6 +695,7 @@ var Vue = (function (exports) {
     }
     // 如果不是延迟执行的，则立即执行一次副作用函数
     if (!options || !options.lazy) {
+      console.log('如果不是延迟执行的，则立即执行一次副作用函数')
       _effect.run();
     }
     const runner = _effect.run.bind(_effect);
@@ -727,7 +728,7 @@ var Vue = (function (exports) {
       }
       const eventInfo = { effect: activeEffect, target, type, key }
         ;
-      console.log('%c触发收集:1,track调用trackEffects', 'color:chartreuse', 'dep:', dep)
+      console.log('%c=track&track=track触发收集:1,track调用trackEffects', 'color:chartreuse', 'dep:', dep)
       trackEffects(dep, eventInfo);
     }
   }
@@ -753,6 +754,7 @@ var Vue = (function (exports) {
     }
   }
   function trigger(target, type, key, newValue, oldValue, oldTarget) {
+    console.log('%c=track&trigger=trigger触发副作用:1开始判断', 'color:chartreuse', { target, type, key, newValue, oldValue, oldTarget })
     const depsMap = targetMap.get(target);
     if (!depsMap) {
       // never been tracked
@@ -762,10 +764,12 @@ var Vue = (function (exports) {
     if (type === "clear" /* TriggerOpTypes.CLEAR */) {
       // collection being cleared
       // trigger all effects for target
+      console.log(`%c=track&trigger=trigger触发副作用2:type:${type}`, 'color:chartreuse')
       deps = [...depsMap.values()];
     }
     else if (key === 'length' && isArray(target)) {
       const newLength = toNumber(newValue);
+      console.log(`%c=track&trigger=trigger触发副作用3:key === 'length' && isArray(target)`, 'color:chartreuse')
       depsMap.forEach((dep, key) => {
         if (key === 'length' || key >= newLength) {
           deps.push(dep);
@@ -775,6 +779,7 @@ var Vue = (function (exports) {
     else {
       // schedule runs for SET | ADD | DELETE
       if (key !== void 0) {
+        console.log(`%c=track&trigger=trigger触发副作用4:`, 'color:chartreuse')
         deps.push(depsMap.get(key));
       }
       // also run for iteration key on ADD | DELETE | Map.SET
@@ -782,25 +787,32 @@ var Vue = (function (exports) {
         case "add" /* TriggerOpTypes.ADD */:
           if (!isArray(target)) {
             deps.push(depsMap.get(ITERATE_KEY));
+            console.log(`%c=track&trigger=trigger触发副作用5:`, 'color:chartreuse')
             if (isMap(target)) {
               deps.push(depsMap.get(MAP_KEY_ITERATE_KEY));
             }
           }
           else if (isIntegerKey(key)) {
+            console.log(`%c=track&trigger=trigger触发副作用6:`, 'color:chartreuse')
             // new index added to array -> length changes
             deps.push(depsMap.get('length'));
           }
           break;
         case "delete" /* TriggerOpTypes.DELETE */:
+          console.log(`%c=track&trigger=trigger触发副作用7:`, 'color:chartreuse')
           if (!isArray(target)) {
+            console.log(`%c=track&trigger=trigger触发副作用7-1:`, 'color:chartreuse')
             deps.push(depsMap.get(ITERATE_KEY));
             if (isMap(target)) {
+              console.log(`%c=track&trigger=trigger触发副作用7-2:`, 'color:chartreuse')
               deps.push(depsMap.get(MAP_KEY_ITERATE_KEY));
             }
           }
           break;
         case "set" /* TriggerOpTypes.SET */:
+          console.log(`%c=track&trigger=trigger触发副作用8:`, 'color:chartreuse')
           if (isMap(target)) {
+            console.log(`%c=track&trigger=trigger触发副作用8-1:`, 'color:chartreuse')
             deps.push(depsMap.get(ITERATE_KEY));
           }
           break;
@@ -808,7 +820,9 @@ var Vue = (function (exports) {
     }
     const eventInfo = { target, type, key, newValue, oldValue, oldTarget };
     if (deps.length === 1) {
+      console.log(`%c=track&trigger=trigger触发副作用9:`, 'color:chartreuse')
       if (deps[0]) {
+        console.log(`%c=track&trigger=trigger触发副作用9-1=执行triggerEffects:`, 'color:chartreuse')
         {
           triggerEffects(deps[0], eventInfo);
         }
@@ -822,40 +836,44 @@ var Vue = (function (exports) {
         }
       }
       {
+        console.log(`%c=track&trigger=trigger触发副作用10=执行triggerEffects:`, 'color:chartreuse')
         triggerEffects(createDep(effects), eventInfo);
       }
     }
   }
   function triggerEffects(dep, debuggerEventExtraInfo) {
-    console.log('%c触发更新:1,triggerEffects接收一个dep和用于调试的额外信息。遍历dep中的effect，逐一使用triggerEffect来执行副作用', 'color:chartreuse', 'dep:', dep)
+    console.log('%c=triggerEffects=触发更新=开始判断=triggerEffects接收一个dep和用于调试的额外信息。遍历dep中的effect，逐一使用triggerEffect来执行副作用', 'color:chartreuse', 'dep:', dep)
     // spread into array for stabilization
     const effects = isArray(dep) ? dep : [...dep];
     for (const effect of effects) {
       if (effect.computed) {
-        console.log('%c触发更新:a,triggerEffects', 'color:chartreuse', 'effect:', effect)
+        console.log('%c=triggerEffects=触发更新:a,triggerEffects->triggerEffect', 'color:chartreuse', 'effect:', effect)
         triggerEffect(effect, debuggerEventExtraInfo);
       }
     }
     for (const effect of effects) {
       if (!effect.computed) {
-        console.log('%c触发更新:b,triggerEffects', 'color:chartreuse', 'effect:', effect)
+        console.log('%c=triggerEffects=触发更新:b,triggerEffects->triggerEffect', 'color:chartreuse', 'effect:', effect)
         triggerEffect(effect, debuggerEventExtraInfo);
       }
     }
   }
   function triggerEffect(effect, debuggerEventExtraInfo) {
+    console.log('%c=triggerEffect正式执行副作用:开启判断逻辑=effect', 'color:cyan', 'effect:', effect)
     if (effect !== activeEffect || effect.allowRecurse) {
       if (effect.onTrigger) {
         effect.onTrigger(extend({ effect }, debuggerEventExtraInfo));
       }
-      // 实际触发更新的地方
+      // 实际触发更新的地方,判断是否有scheduler, 有则执行，无则执行fn
       if (effect.scheduler) {
-        console.log('%c触发更新:1,triggerEffect调用effect.scheduler', 'color:chartreuse')
+        console.log('%c=triggerEffect正式执行副作用:1=triggerEffect调用effect.scheduler', 'color:cyan')
         console.log('%c=队列4:triggerEffect调用effect.scheduler()', 'color:black', effect.scheduler)
+
+        // debugger
         effect.scheduler();
       }
       else {
-        console.log('%c触发更新:2,triggerEffect调用effect.run', 'color:chartreuse')
+        console.log('%c=triggerEffect正式执行副作用:2=triggerEffect调用effect.run', 'color:cyan')
         effect.run();
       }
     }
@@ -908,16 +926,19 @@ var Vue = (function (exports) {
   function createGetter(isReadonly = false, shallow = false) {
     console.log(`%c响应式陷阱触发==>:createGetter`, 'color:red')
     return function get(target, key, receiver) {
-      console.log(`%c响应式触发==>1:get`, 'color:red', target, 'key:', key)
+      console.log(`%c响应式触发=>get:1开始判断`, 'color:red', target, 'key:', key)
       // 如果 get 访问的 key 是 '__v_isReactive'，返回 createGetter 的 isReadonly 参数取反结果
       if (key === "__v_isReactive" /* ReactiveFlags.IS_REACTIVE */) {
+        console.log(`%c响应式触发=>get:2=如果 get 访问的 key 是 '__v_isReactive'`, 'color:red')
         return !isReadonly;
       }
       // 如果 get 访问的 key 是 '__v_isReadonly'，返回 createGetter 的 isReadonly 参数
       else if (key === "__v_isReadonly" /* ReactiveFlags.IS_READONLY */) {
+        console.log(`%c响应式触发=>get:3=如果 get 访问的 key 是 '__v_isReadonly'`, 'color:red')
         return isReadonly;
       }
       else if (key === "__v_isShallow" /* ReactiveFlags.IS_SHALLOW */) {
+        console.log(`%c响应式触发=>get:4=`, 'color:red')
         return shallow;
       }
       // 如果 get 访问的 key 是 '__v_raw'，并且 receiver 与原始标识相等，则返回原始值
@@ -930,6 +951,7 @@ var Vue = (function (exports) {
           : shallow
             ? shallowReactiveMap
             : reactiveMap).get(target)) {
+        console.log(`%c响应式触发=>get:5=如果 get 访问的 key 是 '__v_raw'，并且 receiver 与原始标识相等，则返回原始值`, 'color:red')
         return target;
       }
 
@@ -937,52 +959,56 @@ var Vue = (function (exports) {
       const targetIsArray = isArray(target);
       // 如果不是只读对象，并且目标对象是个数组，访问的 key 又在数组需要劫持的方法里，直接调用修改后的数组方法执行
       if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, key)) {
+        console.log(`%c响应式触发=>get:6=如果不是只读对象，并且目标对象是个数组，访问的 key 又在数组需要劫持的方法里，直接调用修改后的数组方法执行`, 'color:red')
         return Reflect.get(arrayInstrumentations, key, receiver);
       }
 
       // 获取 Reflect 执行的 get 默认结果
       const res = Reflect.get(target, key, receiver);
       // 如果是 key 是 Symbol，并且 key 是 Symbol 对象中的 Symbol 类型的 key
-      // 或者 key 是不需要追踪的 key: __proto__,__v_isRef,__isVue
-      // 直接返回 get 结果
+      // 或者 key 是不需要追踪的 key: __proto__,__v_isRef,__isVue,直接返回 get 结果
       if (isSymbol(key) ? builtInSymbols.has(key) : isNonTrackableKeys(key)) {
+        console.log(`%c响应式触发=>get:7=如果是 key 是 Symbol，并且 key 是 Symbol 对象中的 Symbol 类型的 key`, 'color:red')
         return res;
       }
       // 不是只读对象，执行 track 收集依赖
       if (!isReadonly) {
-        console.log(`%c响应式触发==>2:get,target不是只读对象，track收集依赖`, 'color:red', target, 'key:', key)
+        console.log(`%c响应式触发=>get:8=不return=target不是只读对象，track收集依赖`, 'color:red', target, 'key:', key)
         track(target, "get" /* TrackOpTypes.GET */, key);
       }
       // 如果是 shallow 浅层响应式，直接返回 get 结果
       if (shallow) {
+        console.log(`%c响应式触发=>get:9=如果是 shallow 浅层响应式，直接返回 get 结果`, 'color:red')
         return res;
       }
       // 如果是 ref ，则返回解包后的值 - 当 target 是数组，key 是 int 类型时，不需要解包
       if (isRef(res)) {
+        console.log(`%c响应式触发=>get:10=如果是 ref ，则返回解包后的值 - 当 target 是数组，key 是 int 类型时`, 'color:red')
         // ref unwrapping - skip unwrap for Array + integer key.
         return targetIsArray && isIntegerKey(key) ? res : res.value;
       }
       if (isObject(res)) {
         // 将返回的值也转换成代理，我们在这里做 isObject 的检查以避免无效值警告。
-        // 也需要在这里惰性访问只读和星影视对象，以避免循环依赖。
         // Convert returned value into a proxy as well. we do the isObject check
         // here to avoid invalid value warning. Also need to lazy access readonly
         // and reactive here to avoid circular dependency.
-        console.log('%c响应式=>b:调用reactive', 'color:chartreuse')
+        console.log(`%c响应式触发=>get:11=调用reactive`, 'color:red')
         return isReadonly ? readonly(res) : reactive(res);
       }
-      // 不是 object 类型则直接返回 get 结果
+
+      console.log(`%c响应式触发=>get:12=不是 object 类型则直接返回 get 结果`, 'color:red')
       return res;
     };
   }
   const set = /*#__PURE__*/ createSetter();
   const shallowSet = /*#__PURE__*/ createSetter(true);
   function createSetter(shallow = false) {
-    console.log(`%c响应式陷阱触发==>:createSetter`, 'color:red')
+    console.log(`%c响应式陷阱触发==>:createSetter`, 'color:magenta')
     return function set(target, key, value, receiver) {
-      console.log(`%c响应式触发==>1:set`, 'color:red', target, 'value:', value)
+      console.log(`%c响应式触发==>1:set开始判断`, 'color:magenta', { target, key, value, receiver })
       let oldValue = target[key];
       if (isReadonly(oldValue) && isRef(oldValue) && !isRef(value)) {
+        console.log(`%c响应式触发=>set:2=`, 'color:magenta')
         return false;
       }
       if (!shallow) {
@@ -991,9 +1017,11 @@ var Vue = (function (exports) {
         if (!isShallow(value) && !isReadonly(value)) {
           oldValue = toRaw(oldValue);
           value = toRaw(value);
+          console.log(`%c响应式触发=>set:3=不return`, 'color:magenta')
         }
         if (!isArray(target) && isRef(oldValue) && !isRef(value)) {
           oldValue.value = value;
+          console.log(`%c响应式触发=>set:4=`, 'color:magenta')
           return true;
         }
       }
@@ -1004,14 +1032,19 @@ var Vue = (function (exports) {
       // Reflect.set 获取默认行为的返回值
       const result = Reflect.set(target, key, value, receiver);
       // don't trigger if target is something up in the prototype chain of original
-      // 如果目标是原始对象原型链上的属性，则不会触发 trigger 派发更新
+      /*
+      如果目标是原始对象原型链上的属性，则不会触发 trigger 派发更新
+      当存在上述情形,第一次设置值时,由于子代理没有prop属性方法,
+      会触发父代理的set方法。父代理的这个判断此时是false,算是一个优化,避免2个触发更新
+      */
       if (target === toRaw(receiver)) {
         // 使用 trigger 派发更新，根据 hadKey 区别调用事件
         if (!hadKey) {
+          console.log(`%c响应式触发=>set:5=不return,并调用trigger,使用 trigger 派发更新，根据 hadKey:${hadKey}->add=调用事件`, 'color:magenta')
           trigger(target, "add" /* TriggerOpTypes.ADD */, key, value);
         }
         else if (hasChanged(value, oldValue)) {
-          console.log(`%c响应式触发==>2:set触发依赖`, 'color:red', target, key, value, 'oldValue:', oldValue)
+          console.log(`%c响应式触发=>set:6=不return,并调用trigger,使用 trigger 派发更新，根据hadKey:${hadKey}->set=调用事件`, 'color:red', target, key, value, 'oldValue:', oldValue)
           trigger(target, "set" /* TriggerOpTypes.SET */, key, value, oldValue);
         }
       }
@@ -1647,6 +1680,7 @@ var Vue = (function (exports) {
       trackRefValue(self);
       if (self._dirty || !self._cacheable) {
         self._dirty = false;
+        console.log('self.effect.run')
         self._value = self.effect.run();
       }
       return self._value;
@@ -1694,6 +1728,7 @@ var Vue = (function (exports) {
     const appWarnHandler = instance && instance.appContext.config.warnHandler;
     const trace = getComponentTrace();
     if (appWarnHandler) {
+      console.log('=warn$1调用callWithErrorHandling', { appWarnHandler })
       callWithErrorHandling(appWarnHandler, instance, 11 /* ErrorCodes.APP_WARN_HANDLER */, [
         msg + args.join(''),
         instance && instance.proxy,
@@ -1828,6 +1863,7 @@ var Vue = (function (exports) {
   function callWithErrorHandling(fn, instance, type, args) {
     let res;
     try {
+      console.log(`%c=callWithErrorHandling执行${fn.name}`, 'color:red', fn)
       res = args ? fn(...args) : fn();
     }
     catch (err) {
@@ -1837,6 +1873,7 @@ var Vue = (function (exports) {
   }
   function callWithAsyncErrorHandling(fn, instance, type, args) {
     if (isFunction(fn)) {
+      console.log('=callWithAsyncErrorHandling调用callWithErrorHandling')
       const res = callWithErrorHandling(fn, instance, type, args);
       if (res && isPromise(res)) {
         res.catch(err => {
@@ -1873,6 +1910,7 @@ var Vue = (function (exports) {
       // app-level handling
       const appErrorHandler = instance.appContext.config.errorHandler;
       if (appErrorHandler) {
+        console.log('=handleError调用callWithErrorHandling')
         callWithErrorHandling(appErrorHandler, null, 10 /* ErrorCodes.APP_ERROR_HANDLER */, [err, exposedInstance, errorInfo]);
         return;
       }
@@ -1951,6 +1989,7 @@ var Vue = (function (exports) {
   function queueFlush() {
     if (!isFlushing && !isFlushPending) {
       isFlushPending = true;
+      // debugger
       console.log('%c=队列6-queueFlush', 'color:black', { flushJobs })
       currentFlushPromise = resolvedPromise.then(flushJobs);
     }
@@ -2031,6 +2070,8 @@ var Vue = (function (exports) {
   };
   function flushJobs(seen) {
     console.log('%c=队列7-flushJobs', 'color:black')
+
+    // debugger
     isFlushPending = false;
     isFlushing = true;
     {
@@ -2043,15 +2084,18 @@ var Vue = (function (exports) {
     //    priority number)
     // 2. If a component is unmounted during a parent component's update,
     //    its update can be skipped.
+    console.log('%c=flushJobs 1', 'color:black')
     queue.sort(comparator);
     // conditional usage of checkRecursiveUpdate must be determined out of
     // try ... catch block since Rollup by default de-optimizes treeshaking
     // inside try-catch. This can leave all warning code unshaked. Although
     // they would get eventually shaken by a minifier like terser, some minifiers
     // would fail to do that (e.g. https://github.com/evanw/esbuild/issues/1610)
+    console.log('%c=flushJobs 2', 'color:black')
     const check = (job) => checkRecursiveUpdates(seen, job)
       ;
     try {
+      console.log('%c=flushJobs 3=开始循环queue调用callWithErrorHandling', 'color:black', { check })
       for (flushIndex = 0; flushIndex < queue.length; flushIndex++) {
         const job = queue[flushIndex];
         if (job && job.active !== false) {
@@ -2059,6 +2103,7 @@ var Vue = (function (exports) {
             continue;
           }
           // console.log(`running:`, job.id)
+          console.log('%c=flushJobs调用callWithErrorHandling', 'color:black', { job })
           callWithErrorHandling(job, null, 14 /* ErrorCodes.SCHEDULER */);
         }
       }
@@ -2071,6 +2116,7 @@ var Vue = (function (exports) {
       currentFlushPromise = null;
       // some postFlushCb queued jobs!
       // keep flushing until it drains.
+      console.log('%c=flushJobs 5', 'color:black')
       if (queue.length || pendingPostFlushCbs.length) {
         flushJobs(seen);
       }
@@ -2566,9 +2612,9 @@ var Vue = (function (exports) {
         // withProxy is a proxy with a different `has` trap only for
         // runtime-compiled render functions using `with` block.
         const proxyToUse = withProxy || proxy;
-        console.log('vnode-构建:start-->调用Ast生成的render函数', { render })
+        console.log('%c=vnode-构建:start-->调用Ast生成的render函数', 'color:green', { render, instance })
         result = normalizeVNode(render.call(proxyToUse, proxyToUse, renderCache, props, setupState, data, ctx));
-        console.log('vnode-构建:end-->调用Ast生成的render函数返回vnode:', { result })
+        console.log('%c=vnode-构建:end-->调用Ast生成的render函数返回vnode:', 'color:green', { result })
         fallthroughAttrs = attrs;
       }
       else {
@@ -3379,6 +3425,7 @@ var Vue = (function (exports) {
           return traverse(s);
         }
         else if (isFunction(s)) {
+          console.log('=doWatch调用callWithErrorHandling', { s })
           return callWithErrorHandling(s, instance, 2 /* ErrorCodes.WATCH_GETTER */);
         }
         else {
@@ -3389,6 +3436,7 @@ var Vue = (function (exports) {
     else if (isFunction(source)) {
       if (cb) {
         // getter with cb
+        console.log('=doWatch调用callWithErrorHandling', { source })
         getter = () => callWithErrorHandling(source, instance, 2 /* ErrorCodes.WATCH_GETTER */);
       }
       else {
@@ -3415,6 +3463,7 @@ var Vue = (function (exports) {
     let cleanup;
     let onCleanup = (fn) => {
       cleanup = effect.onStop = () => {
+        console.log('=onCleanup调用callWithErrorHandling', { fn })
         callWithErrorHandling(fn, instance, 4 /* ErrorCodes.WATCH_CLEANUP */);
       };
     };
@@ -3427,6 +3476,7 @@ var Vue = (function (exports) {
       }
       if (cb) {
         // watch(source, cb)
+        console.log('const newValue = effect.run')
         const newValue = effect.run();
         if (deep ||
           forceTrigger ||
@@ -3453,6 +3503,7 @@ var Vue = (function (exports) {
       }
       else {
         // watchEffect
+        console.log('doWatch(source 1')
         effect.run();
       }
     };
@@ -3485,6 +3536,7 @@ var Vue = (function (exports) {
         job();
       }
       else {
+        console.log('doWatch(source 2')
         oldValue = effect.run();
       }
     }
@@ -3492,6 +3544,7 @@ var Vue = (function (exports) {
       queuePostRenderEffect(effect.run.bind(effect), instance && instance.suspense);
     }
     else {
+      console.log('doWatch(source 3')
       effect.run();
     }
     const unwatch = () => {
@@ -5052,7 +5105,7 @@ var Vue = (function (exports) {
         warn$1(`data() should return an object.`);
       }
       else {
-        console.log('start响应式=>a:applyOptions-调用reactive')
+        console.log('start响应式=>a:applyOptions-调用reactive,重点，响应式赋值给实例的data', 'color:magenta')
         instance.data = reactive(data);
         {
           for (const key in data) {
@@ -6177,6 +6230,7 @@ var Vue = (function (exports) {
       }
     }
     if (isFunction(ref)) {
+      console.log('=setRef调用callWithErrorHandling', { ref })
       callWithErrorHandling(ref, owner, 12 /* ErrorCodes.FUNCTION_REF */, [value, refs]);
     }
     else {
@@ -6669,8 +6723,6 @@ var Vue = (function (exports) {
     // style in order to prevent being inlined by minifiers.
     const patch = (n1, n2, container, anchor = null, parentComponent = null, parentSuspense = null, isSVG = false, slotScopeIds = null, optimized = isHmrUpdating ? false : !!n2.dynamicChildren) => {
       /*
-      n1,旧节点
-      n2,新节点
       container,DOM容器，vNode渲染成dom会挂载到该节点下 
       */
 
@@ -6749,11 +6801,15 @@ var Vue = (function (exports) {
 
     const processText = (n1, n2, container, anchor) => {
       if (n1 == null) {
+        console.log('=processText=1,创建文本节点')
         hostInsert((n2.el = hostCreateText(n2.children)), container, anchor);
       }
       else {
         const el = (n2.el = n1.el);
+        console.log('=processText=2,', { el })
         if (n2.children !== n1.children) {
+          console.log(`=processText=3,n2.children !== n1.children，调用hostSetText`, { el, n2_children: n2.children })
+          // debugger
           hostSetText(el, n2.children);
         }
       }
@@ -6807,11 +6863,11 @@ var Vue = (function (exports) {
     const processElement = (n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized) => {
       isSVG = isSVG || n2.type === 'svg';
       if (n1 == null) {
-        console.log('%cpatch之processElement1:挂载dom元素的过程，调用mountElement', 'color:magenta')
+        console.log('%c=patch之processElement1:挂载dom元素的过程，调用mountElement', 'color:magenta')
         mountElement(n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
       }
       else {
-        console.log('%cpatch之processElement2:更新dom元素的过程，调用patchElement', 'color:magenta')
+        console.log('%c=patch之processElement2:更新dom元素的过程，调用patchElement', 'color:magenta')
         patchElement(n1, n2, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
       }
     };
@@ -6830,6 +6886,7 @@ var Vue = (function (exports) {
       }
       else if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
         console.log('%c挂载dom元素mountElement:处理子节点是数组的情况,调用mountChildren对vnode.children进行递归', 'color:magenta', vnode.children)
+        console.log('mountChildren=5')
         mountChildren(vnode.children, el, null, parentComponent, parentSuspense, isSVG && type !== 'foreignObject', slotScopeIds, optimized);
       }
       if (dirs) {
@@ -6937,14 +6994,17 @@ var Vue = (function (exports) {
       const oldProps = n1.props || EMPTY_OBJ;
       const newProps = n2.props || EMPTY_OBJ;
       let vnodeHook;
+      // 关闭recurse，在 beforeUpdated 阶段不允许自己调用
       // disable recurse in beforeUpdate hooks
       parentComponent && toggleRecurse(parentComponent, false);
       if ((vnodeHook = newProps.onVnodeBeforeUpdate)) {
         invokeVNodeHook(vnodeHook, parentComponent, n2, n1);
       }
+      // 指令的 beforeUpdated 钩子
       if (dirs) {
         invokeDirectiveHook(n2, n1, parentComponent, 'beforeUpdate');
       }
+      // 允许自己调用
       parentComponent && toggleRecurse(parentComponent, true);
       if (isHmrUpdating) {
         // HMR updated, force full diff
@@ -6954,21 +7014,29 @@ var Vue = (function (exports) {
       }
       const areChildrenSVG = isSVG && n2.type !== 'foreignObject';
       if (dynamicChildren) {
+        console.log('%c=patchElement=新节点的动态子节点不为空，则比较新旧节点的动态子节点,调用patchBlockChildren')
+        // debugger
         patchBlockChildren(n1.dynamicChildren, dynamicChildren, el, parentComponent, parentSuspense, areChildrenSVG, slotScopeIds);
         if (parentComponent && parentComponent.type.__hmrId) {
           traverseStaticChildren(n1, n2);
         }
       }
       else if (!optimized) {
+        console.log('%c=patchElement=调用patchChildren,在没有优化条件时，使用patchChildren对子节点进行全量的diff')
         // full diff
         patchChildren(n1, n2, el, null, parentComponent, parentSuspense, areChildrenSVG, slotScopeIds, false);
       }
+
+      // 注释：patchFlag 标识的存在意味着元素的 render 代码是由 compiler 生成的，
+      // 且可以在 patch 时走快道，此时能保证新旧节点形状相同，即它们在源模板中正好处于相同的位置
+      // 此时的对比是有着各种优化的
       if (patchFlag > 0) {
         // the presence of a patchFlag means this element's render code was
         // generated by the compiler and can take the fast path.
         // in this path old node and new node are guaranteed to have the same shape
         // (i.e. at the exact same position in the source template)
         if (patchFlag & 16 /* PatchFlags.FULL_PROPS */) {
+          console.log('%c=patchElement=调用patchProps,当props中含有动态的key，需要进行全量 diff')
           // element props contain dynamic keys, full diff needed
           patchProps(el, n2, oldProps, newProps, parentComponent, parentSuspense, isSVG);
         }
@@ -6977,12 +7045,14 @@ var Vue = (function (exports) {
           // this flag is matched when the element has dynamic class bindings.
           if (patchFlag & 2 /* PatchFlags.CLASS */) {
             if (oldProps.class !== newProps.class) {
+              console.log('%c=patchElement=调用hostPatchProp,处理动态类名绑定')
               hostPatchProp(el, 'class', null, newProps.class, isSVG);
             }
           }
           // style
           // this flag is matched when the element has dynamic style bindings
           if (patchFlag & 4 /* PatchFlags.STYLE */) {
+            console.log('%c=patchElement=调用hostPatchProp,处理动态的 style 绑定')
             hostPatchProp(el, 'style', oldProps.style, newProps.style, isSVG);
           }
           // props
@@ -6993,6 +7063,9 @@ var Vue = (function (exports) {
           // bail out and go through a full diff because we need to unset the old key
           if (patchFlag & 8 /* PatchFlags.PROPS */) {
             // if the flag is present then dynamicProps must be non-null
+            // 处理动态的 prop/attr 绑定，有迭代缓存，优化比较速度
+            // 如果 `prop/attr`的 key 是动态的，那么这种优化则会失效
+            console.log('%c=patchElement=调用hostPatchProp,理动态的 prop/attr 绑定，有迭代缓存，优化比较速度')
             const propsToUpdate = n2.dynamicProps;
             for (let i = 0; i < propsToUpdate.length; i++) {
               const key = propsToUpdate[i];
@@ -7014,10 +7087,12 @@ var Vue = (function (exports) {
         }
       }
       else if (!optimized && dynamicChildren == null) {
+        console.log('%c=patchElement=调用patchProps,没有优化，全量 diff')
         // unoptimized, full diff
         patchProps(el, n2, oldProps, newProps, parentComponent, parentSuspense, isSVG);
       }
       if ((vnodeHook = newProps.onVnodeUpdated) || dirs) {
+        console.log('%c=patchElement=updated 钩子 入队')
         queuePostRenderEffect(() => {
           vnodeHook && invokeVNodeHook(vnodeHook, parentComponent, n2, n1);
           dirs && invokeDirectiveHook(n2, n1, parentComponent, 'updated');
@@ -7046,6 +7121,8 @@ var Vue = (function (exports) {
             : // In other cases, the parent container is not actually used so we
             // just pass the block element here to avoid a DOM parentNode call.
             fallbackContainer;
+
+        console.log('%c=patchBlockChildren=循环中调用patch')
         patch(oldVNode, newVNode, container, null, parentComponent, parentSuspense, isSVG, slotScopeIds, true);
       }
     };
@@ -7097,6 +7174,7 @@ var Vue = (function (exports) {
         // a fragment can only have array children
         // since they are either generated by the compiler, or implicitly created
         // from arrays.
+        console.log('=processFragment调用mountChildren=初始化')
         mountChildren(n2.children, container, fragmentEndAnchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
       }
       else {
@@ -7108,6 +7186,7 @@ var Vue = (function (exports) {
           n1.dynamicChildren) {
           // a stable fragment (template root or <template v-for>) doesn't need to
           // patch children order, but it may contain dynamicChildren.
+          console.log('=processFragment调用1patchBlockChildren=更新')
           patchBlockChildren(n1.dynamicChildren, dynamicChildren, container, parentComponent, parentSuspense, isSVG, slotScopeIds);
           if (parentComponent && parentComponent.type.__hmrId) {
             traverseStaticChildren(n1, n2);
@@ -7119,6 +7198,7 @@ var Vue = (function (exports) {
             // as the component is being moved.
             n2.key != null ||
             (parentComponent && n2 === parentComponent.subTree)) {
+            console.log('=processFragment调用2traverseStaticChildren=更新')
             traverseStaticChildren(n1, n2, true /* shallow */);
           }
         }
@@ -7127,6 +7207,7 @@ var Vue = (function (exports) {
           // for keyed & unkeyed, since they are compiler generated from v-for,
           // each child is guaranteed to be a block so the fragment will never
           // have dynamicChildren.
+          console.log('=processFragment调用3patchChildren=更新')
           patchChildren(n1, n2, container, fragmentEndAnchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
         }
       }
@@ -7363,6 +7444,7 @@ var Vue = (function (exports) {
           {
             startMeasure(instance, `render`);
           }
+
           console.log('$ceffect.run==>调用renderComponentRoot，获取组件最新的 VNode,render会读取组件的响应式数据，这会触发依赖收集', 'color:chartreuse')
           const nextTree = renderComponentRoot(instance);
           {
@@ -7414,7 +7496,7 @@ var Vue = (function (exports) {
       console.log('%c=队列1', 'color:black')
       const effect = (instance.effect = new ReactiveEffect(componentUpdateFn, () => queueJob(update), instance.scope // track it in component's effect scope
       ));
-      console.log('依赖收集==>a,关键：调用effect.run()为了触发一下依赖收集')
+      console.log('依赖收集==>a,关键：调用effect.run为了触发一下依赖收集')
       const update = (instance.update = () => effect.run());
       update.id = instance.uid;
       // allowRecurse
@@ -7454,11 +7536,13 @@ var Vue = (function (exports) {
         if (patchFlag & 128 /* PatchFlags.KEYED_FRAGMENT */) {
           // this could be either fully-keyed or mixed (some keyed some not)
           // presence of patchFlag means children are guaranteed to be arrays
+          console.log('=patchChildren调用1,有key->patchKeyedChildren',)
           patchKeyedChildren(c1, c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
           return;
         }
         else if (patchFlag & 256 /* PatchFlags.UNKEYED_FRAGMENT */) {
           // unkeyed
+          console.log('=patchChildren调用2,没key->patchUnkeyedChildren',)
           patchUnkeyedChildren(c1, c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
           return;
         }
@@ -7493,6 +7577,7 @@ var Vue = (function (exports) {
           }
           // mount new if array
           if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+            console.log('mountChildren=2')
             mountChildren(c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
           }
         }
@@ -7509,6 +7594,7 @@ var Vue = (function (exports) {
         const nextChild = (c2[i] = optimized
           ? cloneIfMounted(c2[i])
           : normalizeVNode(c2[i]));
+        console.log('=patchUnkeyedChildren->patch')
         patch(c1[i], nextChild, container, null, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
       }
       if (oldLength > newLength) {
@@ -7517,6 +7603,7 @@ var Vue = (function (exports) {
       }
       else {
         // mount new
+        console.log('mountChildren=3')
         mountChildren(c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized, commonLength);
       }
     };
@@ -8119,6 +8206,7 @@ var Vue = (function (exports) {
           // Teleport *always* has Array children. This is enforced in both the
           // compiler and vnode children normalization.
           if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+            console.log('mountChildren=4')
             mountChildren(children, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
           }
         };
@@ -8505,7 +8593,7 @@ var Vue = (function (exports) {
     }
     // class & style normalization.
     if (props) {
-      console.log('%ccvnode-构建:a-->style和class标准化：', 'color:green', type)
+      console.log('%cvnode-构建:a-->style和class标准化：', 'color:green', type)
       // for reactive or proxy objects, we need to clone it to enable mutation.
       props = guardReactiveProps(props);
       let { class: klass, style } = props;
@@ -8931,7 +9019,10 @@ var Vue = (function (exports) {
       setCurrentInstance(instance);
       pauseTracking();
       console.log('%c响应式=>setupStatefulComponent调用setup()返回setupResult', 'color:chartreuse', { setup })
-      const setupResult = callWithErrorHandling(setup, instance, 0 /* ErrorCodes.SETUP_FUNCTION */, [shallowReadonly(instance.props), setupContext]);
+      const argsArr = [shallowReadonly(instance.props), setupContext]
+      console.log('%c响应式=>setupStatefulComponent用调用callWithErrorHandling', 'color:chartreuse', { setup })
+      // const setupResult = callWithErrorHandling(setup, instance, 0 /* ErrorCodes.SETUP_FUNCTION */, [shallowReadonly(instance.props), setupContext]);
+      const setupResult = callWithErrorHandling(setup, instance, 0 /* ErrorCodes.SETUP_FUNCTION */, argsArr);
       resetTracking();
       unsetCurrentInstance();
       if (isPromise(setupResult)) {
@@ -9599,9 +9690,11 @@ var Vue = (function (exports) {
   const templateContainer = doc && /*#__PURE__*/ doc.createElement('template');
   const nodeOps = {
     insert: (child, parent, anchor) => {
+      console.log(`%c=操作=insert:`, 'color:black', { child, parent })
       parent.insertBefore(child, anchor || null);
     },
     remove: child => {
+      console.log(`%c=操作=remove,child:`, 'color:black', child)
       const parent = child.parentNode;
       if (parent) {
         parent.removeChild(child);
@@ -9614,20 +9707,39 @@ var Vue = (function (exports) {
       if (tag === 'select' && props && props.multiple != null) {
         el.setAttribute('multiple', props.multiple);
       }
+      console.log(`%c=操作=createElement,tag:${tag},return:`, 'color:black', el)
       return el;
     },
-    createText: text => doc.createTextNode(text),
-    createComment: text => doc.createComment(text),
+    createText: text => {
+      console.log('%c=操作=createText', 'color:black', { text })
+      return doc.createTextNode(text)
+    },
+    createComment: text => {
+      console.log('%c=操作=createComment', 'color:black', { text })
+      return doc.createComment(text)
+    },
     setText: (node, text) => {
       node.nodeValue = text;
+      console.log('%c=操作=setText,执行完毕，文本变化了', 'color:black', { node, text })
     },
     setElementText: (el, text) => {
       el.textContent = text;
+      console.log('%c=操作=setElementText=', 'color:black', el)
     },
-    parentNode: node => node.parentNode,
-    nextSibling: node => node.nextSibling,
-    querySelector: selector => doc.querySelector(selector),
+    parentNode: node => {
+      console.log('%c=操作=parentNode,node:', 'color:black', node)
+      return node.parentNode
+    },
+    nextSibling: node => {
+      console.log('%c=操作=nextSibling,node:', 'color:black', node)
+      return node.nextSibling
+    },
+    querySelector: selector => {
+      console.log('%c=操作=querySelector,selector:', 'color:black', selector)
+      return doc.querySelector(selector)
+    },
     setScopeId(el, id) {
+      console.log('%c=操作=setScopeId:', 'color:black', { el, id })
       el.setAttribute(id, '');
     },
     // __UNSAFE__
@@ -9635,6 +9747,7 @@ var Vue = (function (exports) {
     // Static content here can only come from compiled templates.
     // As long as the user only uses trusted templates, this is safe.
     insertStaticContent(content, parent, anchor, isSVG, start, end) {
+      console.log('%c=操作=insertStaticContent:', 'color:black')
       // <parent> before | first ... last | anchor </parent>
       const before = anchor ? anchor.previousSibling : parent.lastChild;
       // #5308 can only take cached path if:

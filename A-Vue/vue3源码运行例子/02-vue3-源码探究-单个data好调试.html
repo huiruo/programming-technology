@@ -19,6 +19,8 @@
     <div>
       <button v-on:click='onClickText' class="btn">Hello world,Click me</button>
       <div><span>ruo-{{msg}}</span></div>
+      <div>{{info2.age}}</div>
+      <button v-on:click='onChange' class="btn">Change</button>
     </div>
   </div>
   <script>
@@ -34,6 +36,9 @@
       data() {
         return {
           msg: '改变我',
+          info2: {
+            age: 26
+          }
           // showDiv: false
         }
       },
@@ -42,6 +47,9 @@
           this.msg = '努力'
           // this.showDiv = !this.showDiv
           // this.info.msg2 = this.showDiv ? '直接点' : '其他选择'
+        },
+        onChange() {
+          this.info2.age = this.info2.age + 1
         }
       },
 

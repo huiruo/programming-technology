@@ -66,7 +66,7 @@ C1("effect.run()触发依赖收集")-->C2("componentUpdateFn()重点函数")--1�
 
 C4("render.call(proxyToUse,..)调用ast生成的render生成vnode")-->C41("执行ast render函数也会触发依赖收集")
 
-C2--2-->D1("创建好vnode,调用patch进行组件内容的渲染")--path之初始化:shapeFlag&6-->D12("processComponent(n1, n2")-->D2("mountElement(n2, container")
+C2--2创建好vnode:nextTree-->D1("调用patch(prevTree,nextTree)进行渲染")--path之初始化:shapeFlag&6-->D12("processComponent(n1, n2")-->D2("mountElement(n2, container")
 
 %% mountComponent--1-->D21("createComponentInstance创建实例")
 %% mountComponent--2-->D22("setupComponent设置组件实例")
@@ -388,6 +388,60 @@ const componentUpdateFn = () => {
 <br />
 
 # vue data更新
+## 前言
+有一个注意点： 初始化的时候instance.data
+```javaScript
+console.log('start响应式=>a:applyOptions-调用reactive,重点，响应式赋值给实例的data', 'color:magenta')
+
+instance.data = reactive(data);
+```
+1. 第一步:所以副作用set的修改的也是instance.data的值,这样就生成的新的instance
+下面debugger可以看到instance数据结构
+```javaScript
+	debugger
+	const nextTree = renderComponentRoot(instance);
+	{
+		endMeasure(instance, `render`);
+	}
+	// 获取组件上次渲染的 VNode
+	const prevTree = instance.subTree;
+	instance.subTree = nextTree;
+```
+
+但是我目前还不知道多个组件它是怎么处理instance.data的，得测试一下
+
+2. 第2步：执行renderComponentRoot,也就是render函数生成最新的vnode
+```javaScript
+console.log('$ceffect.run==>调用renderComponentRoot，获取组件最新的 VNode,render会读取组件的响应式数据，这会触发依赖收集', 'color:chartreuse')
+
+const nextTree = renderComponentRoot(instance);
+```
+
+3. 第3步：执行patch 走diff流程
+```javaScript
+const componentUpdateFn = () => {
+	// 省略...
+	console.log('$ceffect.run==>调用renderComponentRoot，获取组件最新的 VNode,render会读取组件的响应式数据，这会触发依赖收集', 'color:chartreuse')
+	const nextTree = renderComponentRoot(instance);
+	{
+		endMeasure(instance, `render`);
+	}
+	// 获取组件上次渲染的 VNode
+	const prevTree = instance.subTree;
+	instance.subTree = nextTree;
+	{
+		startMeasure(instance, `patch`);
+	}
+	console.log('effect.run==>:componentUpdateFn之updateComponent调用patch 函数进行组件的更新')
+	patch(prevTree, nextTree,
+		// parent may have changed if it's in a teleport
+		hostParentNode(prevTree.el),
+		// anchor may have changed if it's in a fragment
+		getNextHostNode(prevTree), instance, parentSuspense, isSVG);
+	// 省略...
+```
+
+## 流程图
 ```mermaid
 flowchart TD
 A1("set(target, key, value, receiver)")--hadKey=true-->A2("trigger(target,'set',key,value,oldValue)")-->A4
@@ -415,11 +469,174 @@ Z1("componentUpdateFn()")--1创建vnode-->V3("renderComponentRoot(instance)返�
 
 V4("render.call(proxyToUse,..)调用ast生成的render生成vnode")-->C41("执行ast render函数也会触发依赖收集")
 
-Z1--2-->D1("创建好vnode,调用patch进行组件内容的渲染")--path之初始化:shapeFlag&6-->D12("processComponent(n1, n2")-->D2("mountElement(n2, container")
+Z1--2创建好vnode:nextTree-->D1("调用patch(prevTree,nextTree)进行渲染")--case:shapeFlag&1-->D12("processElement")--A更新dom元素-->D2("重点patchElement(n1,n2,parentComponent,parentSuspense,")--"if(dynamicChildren)"-->E1("patchBlockChildren(n1.dynamicChildren,dynamicChildren,el)")-->E2("patch(oldVNode,newVNode,container,null,parentComponent")
 
-Z1--3渲染完毕最后-->E1("处理生命周期函数")
+D12--B初始化逻辑-->D3("mountElement(n2, container")
+
+%%("mountElement(n2, container")
+
+Z1--3渲染完毕最后-->Z2("处理生命周期函数")
 ```
 
+更新的时候以处理文本节点为例子
+```mermaid
+flowchart TD
+E1("patchBlockChildren(n1.dynamicChildren,dynamicChildren,el)")-->A1("patch(oldVNode,newVNode,container,null,parentComponent")--"以文本节点为例:case Text"-->A2("processText(n1,n2,container,anchor)")--"n2.children!==n1.children"-->A3("hostSetText(el,n2.children)")-->A4("setText:(node, text) => {node.nodeValue = text;}页面文本改变了")
+```
+
+# vue v-for 的 :key
+```html
+<div id="root">
+	<li v-for="item in list" :key="item.key">
+		<!-- <li v-for="item in list"> -->
+		{{item.val}}{{item.key}}
+	</li>
+	<button v-on:click='onAdd' class="btn">Add</button>
+	<button v-on:click='onChangeVal(0)' class="btn">Change</button>
+</div>
+<script>
+Vue.createApp({
+	data() {
+		return {
+			list: [
+				{
+					key: 1,
+					val: 'li a',
+					isshow: true
+				},
+			]
+		}
+	},
+	methods: {
+		onAdd() {
+			console.log('=点击了按钮:', this.list)
+			this.list.push({
+				key: 4,
+				val: 'li d',
+				isshow: true
+			})
+		},
+		onChangeVal(index) {
+			console.log('=点击了按钮:', index)
+			this.list[index].val = 'li zzz'
+			this.list.push({
+				key: 4,
+				val: 'li d',
+				isshow: true
+			})
+		}
+	},
+}).mount('#root')
+</script>
+```
+总结：添加key以后，vue会通过key来执行diff算法匹配新旧结点，计算出结点最大的复用，效率更高。
+
+有key更新流程:
+```mermaid
+flowchart TD
+A1(componentUpdateFn)--nextTree最新vnode-->A2("patch(prevTree, nextTree")--第1次patch走case Fragment-->A3("processFragment(n1,n2,container")-->A4("patchBlockChildren(n1.dynamicChildren,dynamicChildren")
+
+A4-->A5("patch(oldVNode,newVNode,container")--第2次patch走case Fragment-->A6("processFragment(n1,n2,container")--这里不一样-->B1
+
+B1("patchChildren(n1,n2,container")-->B2("前提patchFlag>0")
+
+B2--有key-->B4("patchKeyedChildren(c1,c2,container")
+B2--无key-->B5("patchUnkeyedChildren(c1,c2,container")
+```
+
+```javaScript
+const processFragment = (n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized) => {
+	// 省略..
+	if (n1 == null) {
+		// 初始化流程省略..
+		mountChildren(n2.children, container, fragmentEndAnchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
+	}
+	else {
+		if (patchFlag > 0 &&
+			patchFlag & 64 /* PatchFlags.STABLE_FRAGMENT */ &&
+			dynamicChildren &&
+			n1.dynamicChildren) {
+			console.log('=processFragment调用patchBlockChildren=更新')
+			patchBlockChildren(n1.dynamicChildren, dynamicChildren, container, parentComponent, parentSuspense, isSVG, slotScopeIds);
+			if (parentComponent && parentComponent.type.__hmrId) {
+				traverseStaticChildren(n1, n2);
+			}
+			else if (
+				n2.key != null ||
+				(parentComponent && n2 === parentComponent.subTree)) {
+				traverseStaticChildren(n1, n2, true /* shallow */);
+			}
+		}
+		else {
+			patchChildren(n1, n2, container, fragmentEndAnchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
+		}
+	}
+}; 
+```
+
+### patchChildren 执行有key和无key
+```javaScript
+const patchChildren = (n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized = false) => {
+		const c1 = n1 && n1.children;
+		const prevShapeFlag = n1 ? n1.shapeFlag : 0;
+		const c2 = n2.children;
+		const { patchFlag, shapeFlag } = n2;
+		// fast path
+		if (patchFlag > 0) {
+			if (patchFlag & 128 /* PatchFlags.KEYED_FRAGMENT */) {
+				// this could be either fully-keyed or mixed (some keyed some not)
+				// presence of patchFlag means children are guaranteed to be arrays
+				console.log('=patchChildren调用1,有key->patchKeyedChildren',)
+				patchKeyedChildren(c1, c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
+				return;
+			}
+			else if (patchFlag & 256 /* PatchFlags.UNKEYED_FRAGMENT */) {
+				// unkeyed
+				console.log('=patchChildren调用2,没key->patchUnkeyedChildren',)
+				patchUnkeyedChildren(c1, c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
+				return;
+			}
+		}
+		// children has 3 possibilities: text, array or no children.
+		if (shapeFlag & 8 /* ShapeFlags.TEXT_CHILDREN */) {
+			// text children fast path
+			if (prevShapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+				unmountChildren(c1, parentComponent, parentSuspense);
+			}
+			if (c2 !== c1) {
+				hostSetElementText(container, c2);
+			}
+		}
+		else {
+			if (prevShapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+				// prev children was array
+				if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+					// two arrays, cannot assume anything, do full diff
+					patchKeyedChildren(c1, c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
+				}
+				else {
+					// no new children, just unmount old
+					unmountChildren(c1, parentComponent, parentSuspense, true);
+				}
+			}
+			else {
+				// prev children was text OR null
+				// new children is array OR null
+				if (prevShapeFlag & 8 /* ShapeFlags.TEXT_CHILDREN */) {
+					hostSetElementText(container, '');
+				}
+				// mount new if array
+				if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+					console.log('mountChildren=2')
+					mountChildren(c2, container, anchor, parentComponent, parentSuspense, isSVG, slotScopeIds, optimized);
+				}
+			}
+		}
+	};
+```
+
+### 函数1：patchKeyedChildren
+### 函数2：patchUnkeyedChildren
 # 其他异同点
 5. 由于 Vue 是通过 template 模版进行编译的，所以在编译的时候可以很好对静态节点进行分析然后进行打补丁标记，然后在 Diff 的时候，Vue2 是判断如果是静态节点则跳过过循环对比，而 Vue3 则是把整个静态节点进行提升处理，Diff 的时候是不过进入循环的，所以 Vue3 比 Vue2 的 Diff 性能更高效。而 React 因为是通过 JSX 进行编译的，是无法进行静态节点分析的，所以 React 在对静态节点处理这一块是要逊色的。
 
