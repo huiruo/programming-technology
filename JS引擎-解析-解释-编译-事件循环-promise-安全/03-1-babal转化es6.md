@@ -11,8 +11,6 @@ flowchart TD
 A1(es6)-->A2(es5commonJS规范)-->浏览器可执行代码
 ```
 
-![](./img/bable-ast.png)
-
 ### A-1. Bable运行原理
 * 1.解析阶段：包括词法分析和语法分析。
 完成js代码到AST（js代码--令牌流--AST）的解析工作.Babel提供@babel/parser解析代码，用到的解析器是babylon
