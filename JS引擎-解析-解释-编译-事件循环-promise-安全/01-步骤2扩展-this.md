@@ -1,7 +1,7 @@
 # this
-JavaScript 允许在函数体内部，引用当前环境的其他变量。
+JavaScript中this关键字指的是执行上下文所属的运行环境。所以函数中的this是在运行时决定的而不是定义时。注意不是上下文，因为上下文还包括其他的
 
-上面代码中，函数体里面使用了变量a1。该变量由运行环境提供。
+实例代码中，函数体里面使用了变量a1。该变量由运行环境提供。
 
 现在问题就来了，由于函数可以在不同的运行环境执行，所以需要有一种机制，能够在函数体内部获得当前的运行环境（context）。所以，this就出现了，它的设计目的就是在函数体内部，指代函数当前的运行环境。
 ```javaScript
@@ -13,8 +13,6 @@ var fn = function () {
 fn()
 ```
 ## this定义和设计
-JavaScript中this关键字指的是执行上下文所属的运行环境。所以函数中的this是在运行时决定的而不是定义时。注意不是上下文，因为上下文还包括其他的
-
 因为funtion可以赋值给不同的变量，可以看到this表示运行环境，但不是执行上下文,因为this不包括test1
 ```javaScript
 var obj = {
@@ -84,12 +82,26 @@ obj.f()
 ```
 
 ## this指向
-1. 箭头函数没有this
+1. 箭头函数没有this,会直接将当前运行环境的this作为自己的this。注意: 箭头函数没有自己的上下文，没有arguments，箭头函数就是赋值给变量的匿名函数,所以匿名函数不会提升
 ```javaScript
-const fn = ()=>{
-  console.log('fn this:',this) // window
+const fn = (val) => {
+  var test2 = '2'
+  var test3 = '3'
+  // debugger
+  // window/undefined {val: 1, test2: '2', test3: '3'}
+  console.log(this, { val, test2, test3 })
 }
-fn()
+
+fn(1)
+
+// to es5
+var fn = function fn(val) {
+  var test2 = '2';
+  var test3 = '3';
+  debugger;
+  console.log(undefined, { val: val, test2: test2, test3: test3 });
+};
+fn(1);
 ```
 2. 函数作为普通函数（即不作为构造函数）在全局环境下进行调用时，this指的时window
 3. 在事件中，this 指向触发这个事件的对象
@@ -105,8 +117,8 @@ function Normal() {
 }
 
 Normal.prototype.a1 = 1
-debugger
-var normal = new Normal();
+// debugger
+var normal = new Normal(); // normal: Normal {}
 console.log('normal:',normal)
 ```
 5. 如果 apply、call 或 bind 方法用于调用、创建一个函数，函数内的 this 就是作为参数传入这些方法的对象。
