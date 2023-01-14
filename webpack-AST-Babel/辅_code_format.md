@@ -1,9 +1,5 @@
-## 如何使 vscod 生效
-
-https://blog.csdn.net/weixin_59141333/article/details/121525759
-
+## 如何使 vscode 生效
 .prettierrc.js
-
 ```text
 module.exports = {
   tabWidth: 2, // 一个tab代表几个空格数，默认就是2
@@ -20,12 +16,9 @@ module.exports = {
 // 这样配置完后，如果保存还是不能格式化，可能是vscode的默认formatter不是prettier。
 // 这时候可以按CTRL + SHIFT + P,输入format然后选择Format Document，
 // 点击弹出框的按钮configure,然后选择pretter.
-
-
 ```
 
 ## 如果想要配置 eslint 格式化
-
 ```
 在VSCODE的User/setting.json文件中有如下配置
 "editor.codeActionsOnSave": {
