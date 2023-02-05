@@ -30,3 +30,10 @@ console.log('slice 1:', str3.slice(3)) // lo world!!
 console.log('slice 2:', str3.slice(3, 7)) // lo w
 console.log('str3:', str3)
 ```
+
+截取后几位
+```javaScript
+const str = "Hello world!"
+//因为indexEnd为默认，所以从下标3开始截取，后面的全部截取
+console.log('substring 2:', str.substring(3, 7)) // lo w
+```

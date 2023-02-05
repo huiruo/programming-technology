@@ -14,3 +14,34 @@ a[1] = b arr: (3) ['a', 'b', 'c']
 a[2] = c arr: (3) ['a', 'b', 'c']
 */
 ```
+
+
+```javaScript
+const arr = [0,1,2,3,4,5]
+arr.forEach((item,index)=>{
+    console.log(index,'-',item)
+})
+
+const arr = [0,1,2,3,4,5]
+arr.forEach((item,index)=>{
+        if(item===4){
+        console.log('',arr[index])
+        arr.splice(4,1)
+        // index = index -1
+    }
+    console.log(index,'-',item,arr[index])
+})
+
+const arr = [0,1,2,3,4,5]
+const arrLength = arr.length
+// for (let index = 0; index < arrLength; index++) {
+for (let index = 0; index < arr.length; index++) {
+    const item = arr[index];
+        if(item===4){
+        console.log('',arr[index])
+        arr.splice(4,1)
+        // index = index -1
+    }
+    console.log(index,'-',item,arr[index])
+}
+```
