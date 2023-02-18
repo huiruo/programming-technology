@@ -160,7 +160,7 @@ setup (props) {
 }
 ```
 
-## 事件 - Emitting Events
+## 事件 - Emitting Events 
 在 Vue2 中自定义事件是非常直接的，但是在 Vue3 的话，我们会有更多的控制的自由度。
 举例，现在我们想在点击提交按钮时触发一个login的事件。
 在 Vue2 中我们会调用到this.$emit然后传入事件名和参数对象。
