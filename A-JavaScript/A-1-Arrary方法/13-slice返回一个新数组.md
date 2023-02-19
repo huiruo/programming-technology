@@ -1,4 +1,17 @@
 ### slice 不改变原数组
+slice 不会修改原数组，只会返回一个浅复制了原数组中的元素的一个新数组。
+
+使用 slice() 方法从数组中获取片段，但是不会更改原数组。
+```javaScript
+const fruits = ['apple', 'banana', 'mango', 'orange'];
+
+const slicedFruits = fruits.slice(1, 3);
+// slicedFruits 现在是 ['banana', 'mango']
+
+console.log(fruits);
+// fruits 仍然是 ['apple', 'banana', 'mango', 'orange']
+```
+
 slice(start,end) 参数有两个，start为必填字段，end为选填字段，返回一个新的数组，包含从 start 到 end 的元素。
 ```javaScript
 const testArr = new Array();
