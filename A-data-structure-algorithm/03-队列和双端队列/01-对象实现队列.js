@@ -1,6 +1,3 @@
-
-#### 1.对象实现队列
-```javascript
 class Queue {
   constructor() {
     // 控制队列的大小
@@ -65,4 +62,3 @@ const queue = new Queue();
 queue.enqueue('a');
 queue.enqueue('b');
 console.log(queue.toString());
-```

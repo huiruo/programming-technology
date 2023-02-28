@@ -1,6 +1,4 @@
-
-
-```
+/*
 数组数据结构有一个缺点：（在大多数语言中）数组的大小是固定的，从数组的起点或中间插入或移除项的成本很高，因为需要移动元素。
 
 链表存储有序的元素集合，但不同于数组，链表中的元素在内存中并不是连续放置的。
@@ -8,31 +6,30 @@
 
 链表的一个好处在于，添加或移除元素的时候不需要移动其他元素。然而，链表需要使用指针,要想访问链表中间的一个元素，
 则需要从起点（表头）开始迭代链表直到找到所需的元素。 在数组中，我们可以直接访问任何位置的任何元素，
-```
+*/
 
 
-```javascript
 /*
 要表示链表中的第一个以及其他元素，我们需要一个助手类，Node类表示我们想要添加到链表中的项。
 它包含一个element属性，该属性表示要加入链表元素的值；
 以及一个next属性，该属性是指向链表中下一个元素的指针。
 */
 class Node {
-    constructor(element, next) {
-        this.element = element;
-        this.next = next;
-    }
+  constructor(element, next) {
+    this.element = element;
+    this.next = next;
+  }
 }
 
 function defaultEquals(a, b) {
-    return a === b;
+  return a === b;
 }
 
 class LinkedList {
   constructor(equalsFn = defaultEquals) {
     // 要比较链表中的元素是否相等，我们需要使用一个内部调用的函数
     // linkedList类的开发者可以自行传入用于比较两个JavaScript对象或值是否相等的自定义函数。
-      this.equalsFn = equalsFn;
+    this.equalsFn = equalsFn;
     // 链表中元素的数量
     this.count = 0;
     // 由于该数据结构是动态的，我们还需要将第一个元素的引用保存下来。
@@ -126,8 +123,8 @@ class LinkedList {
   * 第一种是移除第一个元素，第二种是移除第一个元素之外的其他元素。
   * */
   removeAt(index) {
-      // 由于该方法要得到需要移除的元素的index（位置），我们需要验证该index是有效的,从0（包括0）到链表的长度（count – 1，因为index是从零开始的）都是有效的位置
-      if (index >= 0 && index < this.count) {
+    // 由于该方法要得到需要移除的元素的index（位置），我们需要验证该index是有效的,从0（包括0）到链表的长度（count – 1，因为index是从零开始的）都是有效的位置
+    if (index >= 0 && index < this.count) {
       let current = this.head;
       // 移除第一项,如果想移除第一个元素，要做的就是让head指向列表的第二个元素。如果把head赋为current.next，就会移除第一个元素。
       if (index === 0) {
@@ -145,7 +142,7 @@ class LinkedList {
         current = previous.next;
         previous.next = current.next;
       }
-      
+
       this.count--;
       return current.element;
     }
@@ -199,4 +196,3 @@ class LinkedList {
     return objString;
   }
 }
-```

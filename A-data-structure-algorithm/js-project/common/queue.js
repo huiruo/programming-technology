@@ -1,5 +1,3 @@
-// @ts-check
-
 export default class Queue {
   constructor() {
     this.count = 0;

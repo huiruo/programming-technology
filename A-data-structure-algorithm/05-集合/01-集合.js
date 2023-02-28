@@ -1,19 +1,15 @@
-
-#### 集合概念
-```
+/*
+## 集合概念
 集合是由一组无序且唯一（即不能重复）的项组成的。该数据结构使用了与有限集合相同的数学概念，但应用在计算机科学的数据结构中。
-```
 
-```javascript
 add(element)：向集合添加一个新元素。
 delete(element)：从集合移除一个元素。
 has(element)：如果元素在集合中，返回true，否则返回false。
 clear()：移除集合中的所有元素。
 size()：返回集合所包含元素的数量。它与数组的length属性类似。
 values()：返回一个包含集合中所有值（元素）的数组。
-```
+*/
 
-```javascript
 class Set {
   constructor() {
     this.items = {};
@@ -113,12 +109,11 @@ set.add(1);
 console.log(set.values()); // 输出[1]
 console.log(set.has(1)); // 输出true 
 console.log(set.size()); // 输出1 
-set.add(2); 
+set.add(2);
 console.log(set.values()); // 输出[1, 2] 
 console.log(set.has(2)); // 输出true 
 console.log(set.size()); // 输出2 
-set.delete(1); 
+set.delete(1);
 console.log(set.values()); // 输出[2] 
-set.delete(2); 
+set.delete(2);
 console.log(set.values()); // 输出[]
-```
