@@ -1,23 +1,16 @@
-
-#### 与弱化版本的区别
-```
+## 弱化版本的区别
 基本上，Map和Set与其弱化版本之间仅有的区别是：
-WeakSet或WeakMap类没有entries、keys和values等方法；
-只能用对象作为键。
-```
+* WeakSet或WeakMap类没有entries、keys和values等方法；
+* 只能用对象作为键。
 
-```
-创建和使用这两个类主要是为了性能。WeakSet和WeakMap是弱化的（用对象作为键），没有强引用的键。
-这使得JavaScript的垃圾回收器可以从中清除整个入口。
+由于WeakSet或WeakMap类没有强引用的键，能够提升JavaScript垃圾回收的性能，并且因为没有迭代器方法，在不知道键的情况下，无法取出值。
 
-另一个优点是，必须用键才可以取出值。这些类没有entries、keys和values等迭代器方法，因此，除非你知道键，
-否则没有办法取出值。这印证了我们在第4章的做法，即使用WeakMap类封装ES2015类的私有属性。
-```
+（可以使用WeakMap 类封装 ES2015 类的私有属性）
 
-#### map 和对象
+## map 和对象
 size map大小确定map只需要o（1）,普通对象需要o(n)
 
-```
+```javaScript
 const map = new Map();
 map.set('someKey1', 1);
 map.set('someKey2', 1);
@@ -39,7 +32,7 @@ console.log(Object.keys(plainObjMap).length) // 100, Runtime: O(n)
 map不需要把所有的键转换为字符串，节省了大量的性能
 遍历
 
-```
+```javaScript
 const map = new Map();
 map.set('someKey1', 1);
 map.set('someKey2', 2);
@@ -74,4 +67,4 @@ map 是保证顺序的，按照添加的顺序依次出来的。
 普通对象继承了很多原型方法，如toString
 而map是干净的！
 
-从 ECMAScript 2015 开始，如果你坚持使用原生的对象， 你可以 Object.create(null) 来生成一个干净的 object *
+从 ECMAScript 2015 开始，如果你坚持使用原生的对象， 你可以 Object.create(null) 来生成一个干净的 object
