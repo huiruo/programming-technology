@@ -21,7 +21,8 @@ let g:vim_markdown_folding_disabled = 1
 noremap Z ZZ <CR>
 noremap <space> :
 inoremap jk <Esc>
-"快速切换到行首行尾                            noremap H ^
+"快速切换到行首行尾                            
+noremap H ^
 noremap L $
 
 map T :NERDTreeToggle<CR>
