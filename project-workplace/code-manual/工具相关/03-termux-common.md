@@ -27,6 +27,51 @@ cat /etc/issue
 nvim ~/.config/nvim/init.vim
 cd /storage/emulated/0/A-termux-space/programming-technology
 
+
+# termux 基础使用
+## 触摸键盘
+Ctrl+A -> 将光标移动到行首
+Ctrl+C -> 中止当前进程
+Ctrl+D -> 注销终端会话
+Ctrl+E -> 将光标移动到行尾
+Ctrl+K -> 从光标删除到行尾
+Ctrl+L -> 清除终端
+Ctrl+Z -> 挂起（发送SIGTSTP到）当前进程
+
+## 音量加键也可以作为产生特定输入的特殊键.
+
+音量加+E -> Esc键
+音量加+T -> Tab键
+音量加+1 -> F1（和音量增加+ 2→F2等）
+音量加+0 -> F10
+音量加+B -> Alt + B，使用readline时返回一个单词
+音量加+F -> Alt + F，使用readline时转发一个单词
+音量加+X -> Alt+X
+音量加+W -> 向上箭头键
+音量加+A -> 向左箭头键
+音量加+S -> 向下箭头键
+音量加+D -> 向右箭头键
+音量加+L -> | （管道字符）
+音量加+H -> 〜（波浪号字符）
+音量加+U -> _ (下划线字符)
+音量加+P -> 上一页
+音量加+N -> 下一页
+音量加+. -> Ctrl + \（SIGQUIT）
+音量加+V -> 显示音量控制
+音量加+Q -> 显示额外的按键视图
+
+## pkg
+pkg search 搜索包
+pkg install 安装包
+pkg uninstall 卸载包
+pkg reinstall 重新安装包
+pkg update 更新源
+pkg upgrade 升级软件包
+pkg list-all 列出可供安装的所有包
+pkg list-installed 列出已经安装的包
+pkg shoe 显示某个包的详细信息
+pkg files 显示某个包的相关文件夹路径
+
 # termux 安装和配置
 ## 不要从google play 安装
 ```
