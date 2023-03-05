@@ -1,6 +1,9 @@
 ## 常用命令
 :source ~/.vimrc
-tabnew xx
+:source 重新加载配置
+:tabnew xx
+:e重新加载文件
+:e!强制丢掉本地修改，从磁盘加载文件.
 
 ## 插件使用
 PlugStatus	列出所有已安装插件
