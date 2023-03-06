@@ -1,5 +1,15 @@
-import { Compare, defaultCompare } from '../common/util.js';
-import { insertionSort } from "./04-2-insertion-sort.js";
+const Compare = {
+  LESS_THAN: -1,
+  BIGGER_THAN: 1,
+  EQUALS: 0
+};
+
+function defaultCompare(a, b) {
+  if (a === b) {
+    return Compare.EQUALS;
+  }
+  return a < b ? Compare.LESS_THAN : Compare.BIGGER_THAN;
+}
 
 function merge(left, right, compareFn) {
   let i = 0;
@@ -10,7 +20,8 @@ function merge(left, right, compareFn) {
   }
   return result.concat(i < left.length ? left.slice(i) : right.slice(j));
 }
-export function mergeSort(array, compareFn = defaultCompare) {
+
+function mergeSort(array, compareFn = defaultCompare) {
   if (array.length > 1) { // 1
     const { length } = array;
     const middle = Math.floor(length / 2); // 2
@@ -22,5 +33,6 @@ export function mergeSort(array, compareFn = defaultCompare) {
 }
 
 const array = [52, 63, 14, 59, 68, 35, 8, 67, 45, 99];
-mergeSort(array)
+
 console.log('array', array)
+console.log('array', mergeSort(array))

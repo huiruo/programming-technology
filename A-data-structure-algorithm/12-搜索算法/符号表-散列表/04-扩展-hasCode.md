@@ -14,7 +14,7 @@
 Java 为很多常用的数据类型重写了 hashCode() 方法（包括 String、Integer、Double、File 和 URL）。
 ```
 
-### 例子：使用 hashCode 与 equals 判断对象是否相等
+## 例子：使用 hashCode 与 equals 判断对象是否相等
 ```
 hashCode 的作用是用来获取哈希码，也可以称作散列码，实际返回值为一个 int 型数据，常用于确定对象在哈希表中的位置。
 

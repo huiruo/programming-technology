@@ -1,4 +1,22 @@
-import { Compare, defaultCompare, swap } from '../common/util.js';
+const Compare = {
+  LESS_THAN: -1,
+  BIGGER_THAN: 1,
+  EQUALS: 0
+};
+
+function defaultCompare(a, b) {
+  if (a === b) {
+    return Compare.EQUALS;
+  }
+  return a < b ? Compare.LESS_THAN : Compare.BIGGER_THAN;
+}
+
+function swap(array, index1, index2) {
+  const aux = array[index1];
+  array[index1] = array[index2];
+  array[index2] = aux;
+}
+
 
 function partition(array, left, right, compareFn) {
   const pivot = array[Math.floor((right + left) / 2)]; // 8
@@ -35,10 +53,10 @@ function quick(array, left, right, compareFn) {
   return array;
 }
 
-export function quickSort(array, compareFn = defaultCompare) {
+function quickSort(array, compareFn = defaultCompare) {
   return quick(array, 0, array.length - 1, compareFn);
 }
 
-const array = [52,63,14,59,68,35,8,67,45,99];
-// quickSort(array)
-// console.log('array',array)
+const array = [52, 63, 14, 59, 68, 35, 8, 67, 45, 99];
+console.log('array:', array)
+console.log('array:', quickSort(array))

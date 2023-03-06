@@ -1,6 +1,23 @@
-import { Compare, defaultCompare } from '../common/util.js';
+const Compare = {
+  LESS_THAN: -1,
+  BIGGER_THAN: 1,
+  EQUALS: 0
+};
 
-export const insertionSort = (array, compareFn = defaultCompare) => {
+function defaultCompare(a, b) {
+  if (a === b) {
+    return Compare.EQUALS;
+  }
+  return a < b ? Compare.LESS_THAN : Compare.BIGGER_THAN;
+}
+
+function swap(array, index1, index2) {
+  const aux = array[index1];
+  array[index1] = array[index2];
+  array[index2] = aux;
+}
+
+const insertionSort = (array, compareFn = defaultCompare) => {
   const { length } = array;
   let temp;
   for (let i = 1; i < length; i++) { // 2
@@ -18,7 +35,6 @@ export const insertionSort = (array, compareFn = defaultCompare) => {
   return array;
 };
 
-const array = [52,63,14,59,68,35,8,67,45,99];
+const array = [52, 63, 14, 59, 68, 35, 8, 67, 45, 99];
 insertionSort(array)
-console.log('array',array)
-
+console.log('array', array)

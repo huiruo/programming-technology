@@ -1,6 +1,4 @@
-
-
-### 归并排序
+## 归并排序
 归并排序是可以实际使用的排序算法。你在本书中学到的前三个排序算法性能不好，但归并排序性能不错，其复杂度为O(nlog(n))。
 ```
 JavaScript的Array类定义了一个sort函数（Array.prototype.sort）用以排序JavaScript数组（我们不必自己实现这个算法）。
@@ -8,7 +6,7 @@ ECMAScript没有定义用哪个排序算法，所以浏览器厂商可以自行�
 
 例如，Mozilla Firefox使用归并排序作为Array.prototype.sort的实现，而Chrome（V8引擎）使用了一个快速排序的变体
 Mozilla/Firefox 使用了 MergeSort。此时的时间复杂度是 O (n log n)。
-自 V8 v7.0 / Chrome 70 起， V8 使用 TimSort, Python的排序算法. Chrome 70 是2018年9月13日发布的。此时时间复杂度 O (n)
+自 V8 v7.0 / Chrome 70 起， V8 使用 TimSort, Python的排序算法. Chrome 70 是2018年9月13日发布的。此时时间复杂度 O (n算法性能)
 ```
 
 ```
