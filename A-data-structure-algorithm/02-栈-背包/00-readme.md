@@ -27,7 +27,7 @@ Byte、Short、Integer、Long、Float、Double、Character、Boolean。
 自动拆箱: java自动将引用类型转化为原始类型的过程，自动拆箱时编译器会调用intValue(),doubleValue()这类的方法将对象转换成原始类型值。
 ```
 
-#### 发生
+### 发生
 ```text
 自动装箱主要发生在两种情况：一种是赋值时，一种是方法调用时。
 a.赋值
