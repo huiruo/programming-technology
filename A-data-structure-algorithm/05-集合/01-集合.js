@@ -9,7 +9,6 @@ clear()：移除集合中的所有元素。
 size()：返回集合所包含元素的数量。它与数组的length属性类似。
 values()：返回一个包含集合中所有值（元素）的数组。
 */
-
 class Set {
   constructor() {
     this.items = {};
